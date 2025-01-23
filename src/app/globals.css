@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  height: 100%;
+  margin: 0;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  background: linear-gradient(135deg, #000, #1e1e2f);
+  background-attachment: fixed;
+  color: #e0e0e0;
+}
+
+@font-face {
+  font-family: 'Satoshi';
+  font-style: normal;
+  font-weight: normal;
+  src: url(/fonts/Satoshi-Bold.ttf) format('truetype');
+}
+
+.inline-code {
+  border: gray 1px solid;
+  background-color: gray 1px solid;
+  border-radius: 10px;
+  padding: 0px 5px;
+}
