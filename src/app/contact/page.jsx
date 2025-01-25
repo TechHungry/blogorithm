@@ -1,5 +1,5 @@
 // import './style.css'
-import Navbar from '@/components/Navbar';
+import Navbar from '@/components/Header';
 import Column from '@/components/Column/Column';
 
 export default function Contact() {
