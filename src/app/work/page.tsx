@@ -6,7 +6,7 @@ import { routes } from '@/app/resources/config';
 import {Post} from "@/interfaces/post";
 import {getAllPosts} from "@/lib/api";
 
-export default function Work() {
+export default function WorkHome() {
 
     const posts = getAllPosts("work");
     posts.sort((a: Post, b: Post) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());

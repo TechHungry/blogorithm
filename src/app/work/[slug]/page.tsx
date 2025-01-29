@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { getAllPosts, getPostBySlug } from "@/lib/api";
 import { CMS_NAME } from "@/lib/constants";
 import markdownToHtml from "@/lib/markdownToHtml";
-import Alert from "@/components/alert";
 import Column from "@/components/Column";
 import Navbar from "@/components/Navbar";
 import { PostBody } from "@/components/post-body";
@@ -13,7 +12,7 @@ import {join} from "path";
 
 const postsDirectory = join(process.cwd(), "src/app/work/posts");
 
-export default async function Blog(props: Params) {
+export default async function Work(props: Params) {
     const params = await props.params;
     const post = getPostBySlug(params.slug, postsDirectory);
 
@@ -68,7 +67,7 @@ export async function generateMetadata(props: Params): Promise<Metadata> {
 }
 
 export async function generateStaticParams() {
-    const posts = getAllPosts("blog");
+    const posts = getAllPosts("work");
 
     return posts.map((post) => ({
         slug: post.slug,

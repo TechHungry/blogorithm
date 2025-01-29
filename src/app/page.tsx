@@ -3,7 +3,6 @@ import Navbar from '../components/Navbar';
 import Column from '../components/Column';
 import { BlogTile, BigTile } from '../components/Tile';
 import Link from 'next/link';
-import { getPosts } from './utils/utils';
 import { routes } from '@/app/resources/config';
 import { getAllPosts } from '@/lib/api';
 import {Post} from "@/interfaces/post";
