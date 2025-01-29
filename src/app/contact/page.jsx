@@ -1,6 +1,6 @@
 // import './style.css'
 import Navbar from '@/components/Header';
-import Column from '@/components/Column/Column';
+import Column from '@/components/Column';
 
 export default function Contact() {
     return (

@@ -41,3 +41,28 @@ body {
   border-radius: 10px;
   padding: 0px 5px;
 }
+
+.background-animation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(209, 10, 10, 0.5), transparent 50%);
+  transition: background 0.1s;
+  z-index: -1;
+}
+
+.blog-link {
+  color: #d10a0a;
+}
+
+.blog-link:hover {
+  color: #d10a0a;
+  text-decoration: underline;
+}
+
+#nav-grid {
+  background: radial-gradient(circle at center, #1e1e2f, #000);
+}
