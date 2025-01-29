@@ -3,12 +3,12 @@ title: "Data Converse"
 publishedAt: "2025-01-25"
 summary: "Data Converse is a Gen-AI powered tool that revolutionizes analytics by generating automated insights and real-time visualizations—all through a user-friendly interface."
 tag: "Technology"
-coverImage: "/assets/blog/segmentation-with-sam-and-yolo/tile.jpg"
+coverImage: "/assets/work/data-converse/tile.jpg"
 status: "PUBLISHED"
 images:
-  - "/assets/blog/segmentation-with-sam-and-yolo/tile.jpg"
+  - "/assets/work/data-converse/tile.jpg"
 ogImage:
-url: "/assets/blog/segmentation-with-sam-and-yolo/tile.jpg"
+  url: "/assets/work/data-converse/tile.jpg"
 ---
 
 Beginner's guide to Segmentation with SAM and YOLO
