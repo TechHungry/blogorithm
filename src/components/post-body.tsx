@@ -1,16 +1,16 @@
-import markdownStyles from "./markdown-styles.module.css";
+import { PortableText, type SanityDocument } from "next-sanity";
 
-type Props = {
-  content: string;
-};
+type PostBodyProps = {
+    body: object;
+}
 
-export function PostBody({ content }: Props) {
+export function PostBody({ body }: PostBodyProps) {
   return (
     <div className="px-12 mx-auto">
-      <div
-        className={markdownStyles["markdown"]}
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
+        <div className="prose">
+            // TODO: Modify to render text, images & code blocks properly
+            {Array.isArray(body) && <PortableText value={body} />}
+        </div>
     </div>
   );
 }

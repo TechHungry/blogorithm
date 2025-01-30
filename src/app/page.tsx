@@ -7,19 +7,29 @@ import { routes } from '@/app/resources/config';
 import { getAllPosts } from '@/lib/api';
 import {Post} from "@/interfaces/post";
 import SubscribeForm from '@/components/SubscribeForm';
+import { type SanityDocument } from "next-sanity";
+import { client } from "@/sanity/client";
 
+const BLOGS_QUERY = `*[
+  _type == "post" && status == "PUBLISHED" && content_type == "blog"
+  && defined(slug.current)
+]|order(publishedAt desc)[0...12]{_id, title, slug, publishedAt, coverImage, summary}`;
 
+const WORKS_QUERY = `*[
+  _type == "post" && status == "PUBLISHED" && content_type == "work"
+  && defined(slug.current)
+]|order(publishedAt desc)[0...12]{_id, title, slug, publishedAt, coverImage, summary}`;
 
-export default function Home() {
+const options = { next: { revalidate: 30 } };
 
-    const blog_posts = getAllPosts("blog");
-    blog_posts.sort((a: Post, b: Post) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-    let blogs: Post[] = blog_posts.slice(0, 2);
+export default async function Home() {
+    let sanity_posts = await client.fetch<SanityDocument[]>(BLOGS_QUERY, {}, options)
+    let blogs: SanityDocument[] = sanity_posts.slice(0, 2);
 
-    const work_posts = getAllPosts("work");
-    work_posts.sort((a: Post, b: Post) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-    let works: Post[] = work_posts.slice(0, 2);
-
+    // TODO: Implement the logic to get the latest works
+    sanity_posts = await client.fetch<SanityDocument[]>(WORKS_QUERY, {}, options)
+    let works: SanityDocument[] = sanity_posts.slice(0, 1);
+    // console.log(works)
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
         e.preventDefault();
@@ -48,7 +58,7 @@ export default function Home() {
                                 </div>
                                 <div className='lg:col-span-2 grid lg:grid-cols-2 md:grid-cols-2 grid-cols-1 gap-16'>
                                     {blogs.map((post) => (
-                                        <div key={post.slug}>
+                                        <div key={post.slug.current}>
                                             <div className="aspect-w-16 aspect-h-9">
                                                 <BlogTile post_data={post} type="blog" />
                                             </div>
