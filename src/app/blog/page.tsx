@@ -5,13 +5,20 @@ import { BlogTile } from '@/components/Tile';
 import { routes } from '@/app/resources/config';
 import {Post} from "@/interfaces/post";
 import {getAllPosts} from "@/lib/api";
+import { type SanityDocument } from "next-sanity";
+import { client } from "@/sanity/client";
 
-export default function BlogHome() {
+const BLOGS_QUERY = `*[
+  _type == "post" && status == "PUBLISHED" && content_type == "blog"
+  && defined(slug.current)
+]|order(publishedAt desc)[0...12]{_id, title, slug, publishedAt, coverImage, summary}`;
 
-	const posts = getAllPosts("blog");
-	posts.sort((a: Post, b: Post) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-	let blogs: Post[] = posts.slice(0, 2);
+const options = { next: { revalidate: 30 } };
 
+export default async function BlogHome() {
+
+	let sanity_posts = await client.fetch<SanityDocument[]>(BLOGS_QUERY, {}, options)
+	let blogs: SanityDocument[] = sanity_posts;
 
 	return (
 		<main>

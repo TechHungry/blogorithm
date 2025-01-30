@@ -1,26 +1,36 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getAllPosts, getPostBySlug } from "@/lib/api";
 import { CMS_NAME } from "@/lib/constants";
-import markdownToHtml from "@/lib/markdownToHtml";
 import Column from "@/components/Column";
 import Navbar from "@/components/Navbar";
 import { PostBody } from "@/components/post-body";
 import { PostHeader } from "@/components/post-header";
 import { routes } from '@/app/resources/config';
-import {join} from "path";
+import { client } from "@/sanity/client";
+import { SanityDocument } from "next-sanity";
+import imageUrlBuilder from "@sanity/image-url";
 
-const postsDirectory = join(process.cwd(), "src/app/work/posts");
+const POST_QUERY = `*[_type == "post" && slug.current == $slug][0]`;
+const WORKS_QUERY = `*[
+  _type == "post" && status == "PUBLISHED" && content_type == "work"
+  && defined(slug.current)
+  ]|order(publishedAt desc)[0...12]{_id, title, slug, publishedAt, coverImage, summary}`;
 
-export default async function Work(props: Params) {
-    const params = await props.params;
-    const post = getPostBySlug(params.slug, postsDirectory);
+const options = { next: { revalidate: 30 } };
+
+export default async function Work({ params }: Params) {
+    const resolvedParams = await params;
+    const post = await client.fetch<SanityDocument>(POST_QUERY, resolvedParams, options);
+
+    const { projectId, dataset } = client.config();
+    if (!projectId || !dataset) {
+        throw new Error("Sanity client configuration is missing projectId or dataset");
+    }
+    let coverImage = imageUrlBuilder({ projectId, dataset }).image(post.coverImage).url();
 
     if (!post) {
         return notFound();
     }
-
-    const content = await markdownToHtml(post.content || "");
 
     return (
         <main>
@@ -29,11 +39,11 @@ export default async function Work(props: Params) {
                 <article className="mb-32">
                     <PostHeader
                         title={post.title}
-                        coverImage={post.coverImage}
+                        coverImage={coverImage}
                         date={post.publishedAt}
                         author={post.author}
                     />
-                    <PostBody content={content}/>
+                    <PostBody body={post.body} />
                 </article>
             </Column>
             <footer className='h-24 w-full'></footer>
@@ -47,9 +57,9 @@ type Params = {
     }>;
 };
 
-export async function generateMetadata(props: Params): Promise<Metadata> {
-    const params = await props.params;
-    const post = getPostBySlug(params.slug, postsDirectory);
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+    const resolvedParams = await params;
+    const post = await client.fetch<SanityDocument>(POST_QUERY, resolvedParams, options);
 
     if (!post) {
         return notFound();
@@ -61,15 +71,15 @@ export async function generateMetadata(props: Params): Promise<Metadata> {
         title,
         openGraph: {
             title,
-            images: [post.ogImage.url],
+            images: [post.coverImage],
         },
     };
 }
 
 export async function generateStaticParams() {
-    const posts = getAllPosts("work");
+    let sanity_posts = await client.fetch<SanityDocument[]>(WORKS_QUERY, {}, options);
 
-    return posts.map((post) => ({
-        slug: post.slug,
+    return sanity_posts.map((post) => ({
+        slug: post.slug.current,
     }));
 }

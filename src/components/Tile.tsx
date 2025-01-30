@@ -1,22 +1,30 @@
 import Link from "next/link";
 import { formatDate } from "@/app/utils/utils";
 import React from 'react';
-import {Post} from "@/interfaces/post";
+import {SanityDocument} from "next-sanity";
+import imageUrlBuilder from "@sanity/image-url";
+import { client } from "@/sanity/client";
+import Image from 'next/image';
+
+const { projectId, dataset } = client.config();
 
 interface BigImageProps {
-  title?: string;
-  type: string;
-  slug: string;
+  source?: any;
+  title: string;
 }
 
-export function BigImage({ title, type, slug }: BigImageProps) {
+export function BigImage({ source, title }: BigImageProps) {
   return (
     <div className={`${!title && "bg-black"} basis-1/2 rounded-md`}>
       {title && (
-        <img
-          src={`/assets/${type}/${slug}/tile.jpg`}
+        <Image
+          src={source}
           alt={title}
           className="rounded-md object-cover w-full h-full"
+          width={1000}
+          height={560}
+          layout="responsive"
+          objectFit="cover"
         />
       )}
     </div>
@@ -24,23 +32,34 @@ export function BigImage({ title, type, slug }: BigImageProps) {
 }
 
 interface BlogTileProps {
-  post_data: Post;
+  post_data: SanityDocument;
   type: string;
 }
 
 export function BlogTile({ post_data, type }: BlogTileProps) {
   const title = post_data.title;
-  let slug = post_data.slug;
+  let slug = post_data.slug.current;
+
+  if (!projectId || !dataset) {
+    throw new Error("Sanity client configuration is missing projectId or dataset");
+  }
+  let coverImage = imageUrlBuilder({projectId, dataset}).image(post_data.coverImage).url();
   return (
     <div className="mt-6">
       <div className={`${!title && "bg-black"} w-full rounded-md`}>
+        <Link href={`/${type}/${slug}`}>
         {title && (
-          <img
-            src={`/assets/${type}/${slug}/tile.jpg`}
+          <Image
+            src={coverImage}
             alt={title}
             className="rounded-md object-cover w-full h-full"
+            width={400}
+            height={225}
+            layout="responsive"
+            objectFit="cover"
           />
         )}
+        </Link>
       </div>
       <div className="mt-4">
         <p>{title}</p>
@@ -54,7 +73,7 @@ export function BlogTile({ post_data, type }: BlogTileProps) {
 }
 
 interface BigTileProps {
-  post_data: Post;
+  post_data: SanityDocument;
   type: string;
   orientation: 'left' | 'right';
 }
@@ -62,19 +81,26 @@ interface BigTileProps {
 export function BigTile({ post_data, type, orientation }: BigTileProps) {
   let title: string = post_data.title;
   let text: string = post_data.summary;
-  let slug = post_data.slug;
+  let slug = post_data.slug.current;
+
+  if (!projectId || !dataset) {
+    throw new Error("Sanity client configuration is missing projectId or dataset");
+  }
+  let coverImage = imageUrlBuilder({projectId, dataset}).image(post_data.coverImage).url();
 
   return (
     <div className="flex lg:flex-row flex-col mt-6 gap-8 gap-x-16">
-      {orientation === 'left' && <BigImage title={title} type={type} slug={slug} />}
+      {orientation === 'left' &&
+          <BigImage source={coverImage} title={title} />
+      }
       <div className="basis-1/2">
         <p className="lg:text-2xl md:text-xl">{title}</p>
-        <p>{text}</p>
+        <p className="my-4 text-justify">{text}</p>
         <Link href={`/${type}/${slug}`} className="blog-link">
           Go to {type} →
         </Link>
       </div>
-      {orientation === 'right' && <BigImage title={title} type={type} slug={slug} />}
+      {orientation === 'right' && <BigImage title={title} />}
     </div>
   );
 }

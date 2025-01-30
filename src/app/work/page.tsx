@@ -3,15 +3,20 @@ import Navbar from '@/components/Navbar';
 import Column from '@/components/Column';
 import { BlogTile } from '@/components/Tile';
 import { routes } from '@/app/resources/config';
-import {Post} from "@/interfaces/post";
-import {getAllPosts} from "@/lib/api";
+import {client} from "@/sanity/client";
+import type {SanityDocument} from "next-sanity";
 
-export default function WorkHome() {
+const POSTS_QUERY = `*[
+  _type == "post" && status == "PUBLISHED" && content_type == "work"
+  && defined(slug.current)
+]|order(publishedAt desc)[0...12]{_id, title, slug, publishedAt, coverImage, summary}`;
 
-    const posts = getAllPosts("work");
-    posts.sort((a: Post, b: Post) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-    let blogs: Post[] = posts.slice(0, 2);
+const options = { next: { revalidate: 30 } };
 
+export default async function WorkHome() {
+
+    let sanity_posts = await client.fetch<SanityDocument[]>(POSTS_QUERY, {}, options)
+    let blogs: SanityDocument[] = sanity_posts;
 
     return (
         <main>
