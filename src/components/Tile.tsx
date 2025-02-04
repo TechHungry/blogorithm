@@ -45,7 +45,7 @@ export function BlogTile({ post_data, type }: BlogTileProps) {
   }
   let coverImage = imageUrlBuilder({projectId, dataset}).image(post_data.coverImage).url();
   return (
-    <div className="mt-6">
+    <div className="mt-6 grid grid-cols-5 gap-8">
       <div className={`${!title && "bg-black"} w-full rounded-md`}>
         <Link href={`/${type}/${slug}`}>
         {title && (
@@ -61,7 +61,7 @@ export function BlogTile({ post_data, type }: BlogTileProps) {
         )}
         </Link>
       </div>
-      <div className="mt-4">
+      <div className="px-12 col-span-4 self-start">
         <p>{title}</p>
         <p className="">{formatDate(post_data.publishedAt)}</p>
         <Link href={`/${type}/${slug}`} className="blog-link">
@@ -89,18 +89,18 @@ export function BigTile({ post_data, type, orientation }: BigTileProps) {
   let coverImage = imageUrlBuilder({projectId, dataset}).image(post_data.coverImage).url();
 
   return (
-    <div className="flex lg:flex-row flex-col mt-6 gap-8 gap-x-16">
+    <div className="flex flex-row mt-6 gap-8 gap-x-16">
       {orientation === 'left' &&
           <BigImage source={coverImage} title={title} />
       }
       <div className="basis-1/2">
         <p className="lg:text-2xl md:text-xl">{title}</p>
-        <p className="my-4 text-justify">{text}</p>
+        <p className="my-4 text-justify">{`${text.slice(0, 100)} ...` }</p>
         <Link href={`/${type}/${slug}`} className="blog-link">
           Go to {type} →
         </Link>
       </div>
-      {orientation === 'right' && <BigImage title={title} />}
+      {orientation === 'right' && <BigImage source={coverImage} title={title} />}
     </div>
   );
 }
