@@ -9,6 +9,7 @@ import { routes } from '@/app/resources/config';
 import { client } from "@/sanity/client";
 import { SanityDocument } from "next-sanity";
 import imageUrlBuilder from "@sanity/image-url";
+import  { Footer } from "@/components/Footer";
 
 const POST_QUERY = `*[_type == "post" && slug.current == $slug][0]`;
 const WORKS_QUERY = `*[
@@ -33,9 +34,9 @@ export default async function Work({ params }: Params) {
     }
 
     return (
-        <main>
+        <>
             <Navbar routes={routes} />
-            <Column>
+            <Column classes={`mt-32`}>
                 <article className="mb-32">
                     <PostHeader
                         title={post.title}
@@ -46,8 +47,8 @@ export default async function Work({ params }: Params) {
                     <PostBody body={post.body} />
                 </article>
             </Column>
-            <footer className='h-24 w-full'></footer>
-        </main>
+            <Footer />
+        </>
     );
 }
 

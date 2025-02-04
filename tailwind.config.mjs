@@ -9,6 +9,8 @@ export default {
     extend: {
       fontFamily: {
         satoshi: ['Satoshi', 'sans-serif'],
+        quilon: ['Quilon', 'sans-serif'],
+        funnel: ['Funnel', 'sans-serif'],
       },
       colors: {
         background: "var(--background)",

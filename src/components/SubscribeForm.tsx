@@ -15,7 +15,7 @@ export default function SubscribeForm(): any {
         <form onSubmit={handleSubmit} className='flex flex-col'>
             <input
                 type='email'
-                placeholder='Email'
+                placeholder='Email Address'
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className='bg-[#161515] border border-[#872341] rounded-lg p-2 text-white w-full'
