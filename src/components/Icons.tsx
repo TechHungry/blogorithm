@@ -24,6 +24,8 @@ import {
 } from "react-icons/hi2";
 
 import { AiFillMail } from "react-icons/ai";
+import { SlArrowDown } from "react-icons/sl";
+import { GoArrowDown } from "react-icons/go";
 
 import {
     PiHouseDuotone,
@@ -72,7 +74,8 @@ export const iconLibrary: IconLibrary = {
     x: FaXTwitter,
     clipboard: HiClipboard,
     arrowUpRightFromSquare: HiArrowTopRightOnSquare,
-    briefcase:PiBriefcaseDuotone
+    briefcase:PiBriefcaseDuotone,
+    downArrow :GoArrowDown
 };
 interface IconButtonProps {
     iconName: keyof typeof iconLibrary;
@@ -85,8 +88,8 @@ export function IconButton({ iconName, text, href }: IconButtonProps): any {
     
     return (
         <Link href={href} className={`flex icon-button items-center mx-2 h-7 hover:bg-white hover:text-black rounded-full`}>
-            {iconName && <Icon className="w-10 h-5"/>}
-            {text && <p className='px-2 mx-auto'>{text}</p>}
+            {iconName && <Icon className="md:w-10 h-5 w-5 md:ms-0 ms-2"/>}
+            {text && <p className='px-2  mx-auto'>{text}</p>}
         </Link>
     );
 }
