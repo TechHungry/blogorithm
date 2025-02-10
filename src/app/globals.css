@@ -92,3 +92,15 @@ body {
 #nav-grid {
   background: radial-gradient(circle at center, #1e1e2f, #000);
 }
+
+.blog-tile-content {
+  background: linear-gradient(310deg, #000, rgba(209, 10, 10, 0.15));
+}
+
+.blog-tile {
+  transition: transform 0.3s ease;
+}
+
+.blog-tile:hover {
+  transform: scale(1.03);
+}

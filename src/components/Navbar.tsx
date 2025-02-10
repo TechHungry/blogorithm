@@ -21,7 +21,7 @@ export default function Navbar({ routes }: NavbarProps) {
                 <div id="nav-grid" className="grid grid-cols-4 md:gap-16 items-center self-center bg-black border border-white rounded-full py-2 px-2 shadow-md">
                     {routes["/"] && <IconButton text="Home" href="/" iconName={''} />}
                     {routes["/blog"] && <IconButton text="Blog" href="/blog" iconName={''} />}
-                    {routes["/work"] && <IconButton text="Works" href="/work" iconName={''} />}
+                    {routes["/work"] && <IconButton text="Projects" href="/work" iconName={''} />}
                     {routes["/about"] && <IconButton text="About" href="/about" iconName={''} />}
                 </div>
             </div>

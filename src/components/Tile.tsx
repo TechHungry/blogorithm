@@ -44,31 +44,30 @@ export function BlogTile({ post_data, type }: BlogTileProps) {
     throw new Error("Sanity client configuration is missing projectId or dataset");
   }
   let coverImage = imageUrlBuilder({projectId, dataset}).image(post_data.coverImage).url();
+
   return (
-    <div className="mt-6 grid grid-cols-5 gap-8">
-      <div className={`${!title && "bg-black"} w-full rounded-md`}>
-        <Link href={`/${type}/${slug}`}>
-        {title && (
-          <Image
-            src={coverImage}
-            alt={title}
-            className="rounded-md object-cover w-full h-full"
-            width={400}
-            height={225}
-            layout="responsive"
-            objectFit="cover"
-          />
-        )}
-        </Link>
+      <div className="blog-tile flex flex-row rounded-md shadow-lg overflow-hidden h-full">
+        <div className="w-2/5 h-full flex relative">
+          {title && (
+              <Image
+                  src={coverImage}
+                  alt={title}
+                  className="object-cover"
+                  layout="fill"
+              />
+          )}
+        </div>
+        <div className="w-3/5 p-4 blog-tile-content">
+          <p className="text-lg font-satoshi">{title}</p>
+          <p className="text-gray-500 text-sm">{formatDate(post_data.publishedAt)}</p>
+          <p className="my-3 text-sm">
+            {post_data.summary.length > 104 ? `${post_data.summary.slice(0, 100)} ...` : post_data.summary}
+          </p>
+          <Link href={`/${type}/${slug}`} className="blog-link hover:underline mt-4 block text-right">
+            Go to {type} →
+          </Link>
+        </div>
       </div>
-      <div className="px-12 col-span-4 self-start">
-        <p>{title}</p>
-        <p className="">{formatDate(post_data.publishedAt)}</p>
-        <Link href={`/${type}/${slug}`} className="blog-link">
-          Go to {type} →
-        </Link>
-      </div>
-    </div>
   );
 }
 
