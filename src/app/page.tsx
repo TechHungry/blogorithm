@@ -9,9 +9,9 @@ import SubscribeForm from '@/components/SubscribeForm';
 import {type SanityDocument} from "next-sanity";
 import {client} from "@/sanity/client";
 import {Footer} from "@/components/Footer";
-
+//  && content_type == "blog"
 const BLOGS_QUERY = `*[
-  _type == "post" && status == "PUBLISHED" && content_type == "blog"
+  _type == "post" && status == "PUBLISHED"
   && defined(slug.current)
 ]|order(publishedAt desc)[0...12]{_id, title, slug, publishedAt, coverImage, summary}`;
 
@@ -19,6 +19,12 @@ const WORKS_QUERY = `*[
   _type == "post" && status == "PUBLISHED" && content_type == "work"
   && defined(slug.current)
 ]|order(publishedAt desc)[0...12]{_id, title, slug, publishedAt, coverImage, summary}`;
+
+const car_images = [
+    'https://cdn.sanity.io/images/9ykzm040/production/cb3a2dbbd2a04599413d0d44748afbbdfbcc6e81-2132x1408.jpg',
+    'https://cdn.sanity.io/images/9ykzm040/production/36b5ebe8c69864df615066bb6bc61726f6747f63-360x240.jpg',
+    'https://cdn.sanity.io/images/9ykzm040/production/519623ec5a0039001ce3660cdcab126418b1af32-1000x600.jpg'
+]
 
 const options = {next: {revalidate: 30}};
 
@@ -45,7 +51,7 @@ export default async function Home() {
                         <IconButton href="#home-content" iconName="downArrow"/>
                     </div>
                 </section>
-                <section id="home-content">
+                <section id="home-content" className="px-32">
                     <Column>
                         <section className="blogs-section">
                             <div className="mx-auto mb-16">
@@ -76,8 +82,8 @@ export default async function Home() {
                                         See All →
                                     </Link>
                                 </div>
+                                <hr className={`h-px mt-4 mb-16 bg-gray-500 border-0`}/>
 
-                                <hr className={`h-px mt-4 mb-12 bg-gray-500 border-0`}/>
                                 {works.map((post) => (
                                     <div className="flex-1" key={post.slug}>
                                         <BigTile post_data={post} orientation="left" type="work"/>
@@ -87,8 +93,8 @@ export default async function Home() {
                         </section>
                     </Column>
                 </section>
-                <section className="subscribe-section mx-w-2xl px-12 my-32">
-                    <div className="mx-auto my-24">
+                <section className="subscribe-section mx-w-2xl my-16 px-32">
+                    <div className="mx-auto my-24 px-8">
                         <div
                             className="w-full flex justify-center items-center border border-[#872341] rounded-lg bg-[#161515]">
                             <div className="p-12 w-full max-w-2xl text-center">
@@ -104,3 +110,8 @@ export default async function Home() {
         </>
     );
 }
+
+
+// 'https://cdn.sanity.io/images/9ykzm040/production/cb3a2dbbd2a04599413d0d44748afbbdfbcc6e81-2132x1408.jpg'
+// 'https://cdn.sanity.io/images/9ykzm040/production/36b5ebe8c69864df615066bb6bc61726f6747f63-360x240.jpg'
+// 'https://cdn.sanity.io/images/9ykzm040/production/519623ec5a0039001ce3660cdcab126418b1af32-1000x600.jpg'
