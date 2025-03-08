@@ -2,8 +2,8 @@ const baseURL = "arfath.me";
 
 const routes = {
   "/": true,
-  "/about": false,
-  "/authors": true,
+  "/about": true,
+  "/authors": false,
   "/work": true,
   "/blog": true,
   "/gallery": false,
