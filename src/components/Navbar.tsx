@@ -22,7 +22,7 @@ export default function Navbar({ routes }: NavbarProps) {
                     {routes["/"] && <IconButton text="Home" href="/" iconName={''} />}
                     {routes["/blog"] && <IconButton text="Blogs" href="/blog" iconName={''} />}
                     {routes["/work"] && <IconButton text="Projects" href="/work" iconName={''} />}
-                    {routes["/authors"] && <IconButton text="Authors" href="/authors" iconName={''} />}
+                    {routes["/about"] && <IconButton text="About" href="/about" iconName={''} />}
                 </div>
             </div>
         </div>

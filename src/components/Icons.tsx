@@ -81,13 +81,14 @@ interface IconButtonProps {
     iconName: keyof typeof iconLibrary;
     text?: string;
     href: string;
+    effect?: boolean;
 }
 
-export function IconButton({ iconName, text, href }: IconButtonProps): any {
+export function IconButton({ iconName, text, href, effect=true }: IconButtonProps): any {
     const Icon = iconLibrary[iconName];
     
     return (
-        <Link href={href} className={`flex icon-button items-center mx-2 h-7 hover:bg-white hover:text-black rounded-full`}>
+        <Link href={href} className={`flex icon-button items-center mx-2 h-7 ${effect && `hover:bg-white hover:text-black rounded-full`}`}>
             {iconName && <Icon className="md:w-10 h-5 w-5 md:ms-0 ms-2"/>}
             {text && <p className='px-2  mx-auto'>{text}</p>}
         </Link>
