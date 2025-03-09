@@ -13,7 +13,7 @@ import  { Footer } from "@/components/Footer";
 
 const POST_QUERY = `*[_type == "post" && slug.current == $slug][0]`;
 const BLOGS_QUERY = `*[
-  _type == "post" && status == "PUBLISHED" && content_type == "blog"
+  _type == "post" && status == "PUBLISHED"
   && defined(slug.current)
   ]|order(publishedAt desc)[0...12]{_id, title, slug, publishedAt, coverImage, summary}`;
 

@@ -1,7 +1,8 @@
 import '@/app/globals.css';
+import React from 'react';
 import Navbar from '../components/Navbar';
 import Column from '../components/Column';
-import {BlogTile, BigTile} from '@/components/Tile';
+import {BlogTile, BigBlogTile} from '@/components/Tile';
 import Link from 'next/link';
 import {routes} from '@/app/resources/config';
 import {IconButton} from "@/components/Icons";
@@ -9,31 +10,16 @@ import SubscribeForm from '@/components/SubscribeForm';
 import {type SanityDocument} from "next-sanity";
 import {client} from "@/sanity/client";
 import {Footer} from "@/components/Footer";
-//  && content_type == "blog"
 const BLOGS_QUERY = `*[
   _type == "post" && status == "PUBLISHED"
   && defined(slug.current)
-]|order(publishedAt desc)[0...12]{_id, title, slug, publishedAt, coverImage, summary}`;
-
-const WORKS_QUERY = `*[
-  _type == "post" && status == "PUBLISHED" && content_type == "work"
-  && defined(slug.current)
-]|order(publishedAt desc)[0...12]{_id, title, slug, publishedAt, coverImage, summary}`;
-
-const car_images = [
-    'https://cdn.sanity.io/images/9ykzm040/production/cb3a2dbbd2a04599413d0d44748afbbdfbcc6e81-2132x1408.jpg',
-    'https://cdn.sanity.io/images/9ykzm040/production/36b5ebe8c69864df615066bb6bc61726f6747f63-360x240.jpg',
-    'https://cdn.sanity.io/images/9ykzm040/production/519623ec5a0039001ce3660cdcab126418b1af32-1000x600.jpg'
-]
+]|order(publishedAt desc)[0...12]{_id, content_type, title, slug, publishedAt, coverImage, summary}`;
 
 const options = {next: {revalidate: 30}};
 
 export default async function Home() {
     let sanity_posts = await client.fetch<SanityDocument[]>(BLOGS_QUERY, {}, options);
     let blogs: SanityDocument[] = sanity_posts.slice(0, 4);
-
-    sanity_posts = await client.fetch<SanityDocument[]>(WORKS_QUERY, {}, options);
-    let works: SanityDocument[] = sanity_posts.slice(0, 1);
 
     return (
         <>
@@ -53,44 +39,27 @@ export default async function Home() {
                 </section>
                 <section id="home-content" className="px-32">
                     <Column>
-                        <section className="blogs-section">
-                            <div className="mx-auto mb-16">
-                                <div className="flex justify-between">
-                                    <h1 className="lg:text-4xl md:text-3xl text-2xl font-funnel">Latest in the blog</h1>
-                                    <Link href="/blog" className="blog-link self-end">
-                                        See All →
-                                    </Link>
-                                </div>
-                                <hr className={`h-px mt-4 mb-12 bg-gray-500 border-0`}/>
-                                <div className="grid lg:grid-cols-2 grid-cols-1 gap-x-12 gap-y-8 my-16">
-                                    {blogs.map((post) => (
-                                        <div className="aspect-w-16 aspect-h-9" key={post._id}>
-                                            <BlogTile post_data={post} type="blog"/>
-                                        </div>
-                                    ))}
-                                </div>
-
+                    <section className="blogs-section">
+                        <div className="mx-auto mb-16">
+                            <div className="flex justify-between">
+                                <h1 className="lg:text-4xl md:text-3xl text-2xl font-funnel">Latest in the blog</h1>
+                                <Link href="/blog" className="blog-link self-end">
+                                    See All →
+                                </Link>
                             </div>
-                        </section>
-                    </Column>
-                    <Column>
-                        <section className="works-section">
-                            <div className="mx-auto mb-16">
-                                <div className="flex justify-between">
-                                    <h1 className="lg:text-4xl md:text-3xl text-2xl font-funnel">Project Spotlight</h1>
-                                    <Link href="/work" className="blog-link self-end">
-                                        See All →
-                                    </Link>
-                                </div>
-                                <hr className={`h-px mt-4 mb-16 bg-gray-500 border-0`}/>
-
-                                {works.map((post) => (
-                                    <div className="flex-1" key={post.slug}>
-                                        <BigTile post_data={post} orientation="left" type="work"/>
-                                    </div>
-                                ))}
+                            <hr className={`h-px mt-4 mb-12 bg-gray-500 border-0`}/>
+                            <div className="grid lg:grid-cols-2 grid-cols-1 gap-x-12 gap-y-8 my-16">
+                                {blogs.map((post, index) => {
+                                    if (index <= 1)  {
+                                        // First post → Big tile
+                                        return <BigBlogTile key={post._id} post_data={post} />;
+                                    }
+                                    return <BlogTile key={post._id} post_data={post} />;
+                                })}
                             </div>
-                        </section>
+
+                        </div>
+                    </section>
                     </Column>
                 </section>
                 <section className="subscribe-section mx-w-2xl my-16 px-32">

@@ -12,7 +12,7 @@ import  { Footer } from "@/components/Footer";
 const BLOGS_QUERY = `*[
   _type == "post" && status == "PUBLISHED"
   && defined(slug.current)
-]|order(publishedAt desc)[0...12]{_id, title, slug, publishedAt, coverImage, summary}`;
+]|order(publishedAt desc)[0...12]{_id, content_type, title, slug, publishedAt, coverImage, summary}`;
 
 const options = { next: { revalidate: 30 } };
 
@@ -32,12 +32,9 @@ export default async function BlogHome() {
 							{/* <h1 className="lg:text-4xl md:text-5xl text-4xl font-extrabold font-satoshi lg:leading-tight pe-4 self-start">on Blogorithm.</h1> */}
 						</div>
 						<div className="grid lg:grid-cols-2 grid-cols-1 gap-x-12 gap-y-8 my-16">
-
 								{blogs.map((post) => (
 									<div key={post.slug}>
-										<div className="aspect-w-16 aspect-h-9" key={`blogs_${post._id}`}>
-											<BlogTile post_data={post} type="blog"/>
-										</div>
+										<BlogTile post_data={post}/>
 									</div>
 								))}
 						</div>
