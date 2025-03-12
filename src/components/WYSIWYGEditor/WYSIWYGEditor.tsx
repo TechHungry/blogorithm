@@ -1,6 +1,8 @@
+// src/components/WYSIWYGEditor/WYSIWYGEditor.tsx
 'use client';
 
 import React, {useEffect, useRef, useState, DragEvent, ChangeEvent, ClipboardEvent} from 'react';
+import { signOut } from 'next-auth/react';
 import Toolbar from './Toolbar';
 import './EditorStyles.css';
 
@@ -186,18 +188,32 @@ const WYSIWYGEditor = () => {
         }
     };
 
+    // Handle sign out
+    const handleSignOut = () => {
+        signOut({ callbackUrl: '/' });
+    };
+
     return (
         <div className={`w-full`}>
             <div className={`py-3 px-2 flex justify-between items-center border-b`}>
                 <h1 className={`font-satoshi text-2xl`}>Blogorithm.</h1>
-                <button
-                    type="submit"
-                    className={`font-satoshi bg-[#872341] rounded-lg px-4 py-1 text-white border border-[#872341] hover:border hover:bg-[#161515] ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                >
-                    {isSubmitting ? 'Submitting...' : 'Submit'}
-                </button>
+                <div className="flex space-x-2">
+                    <button
+                        type="button"
+                        className={`font-satoshi bg-red-600 rounded-lg px-4 py-1 text-white border border-red-600 hover:bg-[#161515] transition duration-200`}
+                        onClick={handleSignOut}
+                    >
+                        Sign Out
+                    </button>
+                    <button
+                        type="submit"
+                        className={`font-satoshi bg-[#872341] rounded-lg px-4 py-1 text-white border border-[#872341] hover:border hover:bg-[#161515] ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        onClick={handleSubmit}
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting ? 'Submitting...' : 'Submit'}
+                    </button>
+                </div>
             </div>
             <div className={`flex flex-col w-full`}>
                 <div className={`flex flex-row justify-between items-center my-2 gap-x-8`}>

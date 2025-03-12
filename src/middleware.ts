@@ -1,10 +1,10 @@
 // src/middleware.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { validateToken } from '@/lib/tokenStorage';
+import { getToken } from 'next-auth/jwt';
+import { UserRole } from './lib/clientUserPermissions';
 
-export function middleware(request: NextRequest) {
-    // Skip middleware during build time by checking for Node.js user agent
-    // This is a reliable way to detect build/prerender requests
+export async function middleware(request: NextRequest) {
+    // Skip middleware during build time
     const userAgent = request.headers.get('user-agent') || '';
     if (!userAgent ||
         userAgent.includes('Node.js') ||
@@ -12,25 +12,64 @@ export function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
-    // Only protect the /write route
-    if (request.nextUrl.pathname === '/write') {
-        try {
-            const token = request.nextUrl.searchParams.get('token');
+    try {
+        // Get the session token (for all protected routes)
+        const token = await getToken({
+            req: request,
+            secret: process.env.NEXTAUTH_SECRET
+        });
 
-            if (!token || !validateToken(token)) {
-                // Redirect to unauthorized page
+        // Log token details for debugging
+        console.log(`Middleware token:`, {
+            email: token?.email,
+            role: token?.role,
+            path: request.nextUrl.pathname
+        });
+
+        // Only protect the /write route
+        if (request.nextUrl.pathname === '/write') {
+            // If no token (not signed in) redirect to sign in
+            if (!token) {
+                const signInUrl = new URL('/api/auth/signin', request.url);
+                signInUrl.searchParams.set('callbackUrl', request.url);
+                return NextResponse.redirect(signInUrl);
+            }
+
+            // Check if user has write permission
+            const role = token.role as UserRole;
+            if (role !== UserRole.WRITER && role !== UserRole.ADMIN) {
+                // Redirect to access request page
+                return NextResponse.redirect(new URL('/request-access', request.url));
+            }
+        }
+
+        // Also protect the /authorize admin page
+        if (request.nextUrl.pathname === '/authorize') {
+            // If not signed in, redirect to sign in
+            if (!token) {
+                const signInUrl = new URL('/api/auth/signin', request.url);
+                signInUrl.searchParams.set('callbackUrl', request.url);
+                return NextResponse.redirect(signInUrl);
+            }
+
+            // Check if the user is an admin
+            const role = token.role as UserRole;
+            console.log(`Admin check: ${token.email} has role ${role}`);
+
+            if (role !== UserRole.ADMIN) {
+                // If not an admin, redirect to unauthorized
+                console.log(`Access denied for ${token.email} to /authorize`);
                 return NextResponse.redirect(new URL('/unauthorized', request.url));
             }
-        } catch (error) {
-            // If validation throws an error, redirect to unauthorized
-            console.error('Token validation error:', error);
-            return NextResponse.redirect(new URL('/unauthorized', request.url));
         }
+    } catch (error) {
+        console.error('Auth middleware error:', error);
+        return NextResponse.redirect(new URL('/unauthorized', request.url));
     }
 
     return NextResponse.next();
 }
 
 export const config = {
-    matcher: '/write'
+    matcher: ['/write', '/authorize']
 };
