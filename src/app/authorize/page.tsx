@@ -1,138 +1,77 @@
 // src/app/authorize/page.tsx
 'use client';
 
-import React, {useState, useEffect} from 'react';
-import {useRouter} from 'next/navigation';
-import {routes} from '@/app/resources/config';
+import React, { useState, useEffect } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { routes } from '@/app/resources/config';
 import Navbar from '@/components/Navbar';
-import {Footer} from "@/components/Footer";
-
-interface Token {
-    id: string;
-    value: string;
-    createdAt: string;
-}
+import { Footer } from "@/components/Footer";
+import { UserRole, fetchUsers, updateUserRole } from '@/lib/clientUserPermissions';
+import type { User } from '@/lib/clientUserPermissions';
 
 export default function AuthorizePage() {
-    const [password, setPassword] = useState('');
-    const [isAuthorized, setIsAuthorized] = useState(false);
-    const [tokens, setTokens] = useState<Token[]>([]);
+    const { data: session, status } = useSession();
+    const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [showModal, setShowModal] = useState(false);
-    const [newToken, setNewToken] = useState<Token | null>(null);
     const router = useRouter();
 
-    // Function to check password
-    const checkPassword = async () => {
-        // In a real app, you would hash this password and verify on the server
-        // For simplicity, we're just checking against the ADMIN_PASSWORD
-
-        if (password === (process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'change-this-password')) {
-            setIsAuthorized(true);
-            await fetchTokens();
-        } else {
-            alert('Incorrect password');
+    useEffect(() => {
+        // If not authenticated, the middleware should redirect
+        if (status === 'unauthenticated') {
+            router.push('/api/auth/signin');
+            return;
         }
-    };
 
-    // Function to fetch all tokens
-    const fetchTokens = async () => {
-        console.log("Setting loading to true");
+        // If authenticated, check if admin
+        if (status === 'authenticated') {
+            const userRole = (session.user as any)?.role;
+
+            if (userRole === UserRole.ADMIN) {
+                // Fetch users
+                getUsers();
+            } else {
+                // Should not normally reach here due to middleware
+                router.push('/unauthorized');
+            }
+        }
+    }, [session, status, router]);
+
+    // Function to fetch all users
+    const getUsers = async () => {
         setIsLoading(true);
         try {
-            console.log("Fetching tokens with password:", password);
-            const response = await fetch('/api/tokens', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `${password}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            console.log("Response status:", response.status);
-
-            if (response.ok) {
-                const data = await response.json();
-                setTokens(data.tokens);
-            } else {
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
-                setIsAuthorized(false);
-            }
+            const usersList = await fetchUsers();
+            setUsers(usersList);
         } catch (error) {
-            console.error('Error fetching tokens:', error);
+            console.error('Error fetching users:', error);
         } finally {
-            console.log("Setting loading to false");
             setIsLoading(false);
         }
     };
 
-    // Function to generate a new token
-    const generateNewToken = async () => {
-        console.log("Setting loading to true");
+    // Function to update user role
+    const handleUpdateUserRole = async (email: string, role: UserRole) => {
         setIsLoading(true);
         try {
-            const response = await fetch('/api/tokens', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `${password}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const success = await updateUserRole(email, role);
 
-            if (response.ok) {
-                const data = await response.json();
-                setNewToken(data.token);
-                setShowModal(true);
-                await fetchTokens();
+            if (success) {
+                // Update user in local state
+                setUsers(prevUsers =>
+                    prevUsers.map(user =>
+                        user.email === email ? { ...user, role } : user
+                    )
+                );
             } else {
-                const errorText = await response.text();
-                console.error('Error generating token:', errorText);
-                alert('Failed to generate token. Please check console for details.');
+                alert('Failed to update user role. Please try again.');
             }
         } catch (error) {
-            console.error('Error generating token:', error);
-            alert('Error generating token. Please check console for details.');
+            console.error('Error updating user role:', error);
+            alert('Error updating user role. Please check console for details.');
         } finally {
-            console.log("Setting loading to false");
             setIsLoading(false);
         }
-    };
-
-    // Function to delete a token
-    const deleteTokenById = async (id: string) => {
-        console.log("Setting loading to true");
-        setIsLoading(true);
-        try {
-            const response = await fetch(`/api/tokens?id=${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `${password}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                await fetchTokens();
-            } else {
-                const errorText = await response.text();
-                console.error('Error deleting token:', errorText);
-                alert('Failed to delete token. Please check console for details.');
-            }
-        } catch (error) {
-            console.error('Error deleting token:', error);
-            alert('Error deleting token. Please check console for details.');
-        } finally {
-            console.log("Setting loading to true");
-            setIsLoading(false);
-        }
-    };
-
-    // Function to copy token link to clipboard
-    const copyToClipboard = (tokenValue: string) => {
-        const tokenLink = `${window.location.origin}/write?token=${tokenValue}`;
-        navigator.clipboard.writeText(tokenLink);
-        alert('Link copied to clipboard!');
     };
 
     // Function to format date
@@ -140,65 +79,46 @@ export default function AuthorizePage() {
         return new Date(dateString).toLocaleString();
     };
 
-    // If not authorized, show login screen
-    if (!isAuthorized) {
+    // If loading, show spinner
+    if (status === 'loading' || (status === 'authenticated' && !users.length && !isLoading)) {
         return (
             <>
                 <Navbar routes={routes}/>
-                <div className="flex items-center justify-around my-auto">
-                    <div className="p-6 bg-gray-800 rounded shadow-md text-white w-full max-w-md border border-gray-700">
-                        <h1 className="text-2xl font-bold mb-4">Authorization Required</h1>
-                        <div className="mb-4">
-                            <label className="block mb-2">Password</label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full p-2 border rounded bg-gray-700 text-white border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                onKeyDown={(e) => e.key === 'Enter' && checkPassword()}
-                            />
-                        </div>
-                        <button
-                            onClick={checkPassword}
-                            className="w-full p-2 bg-blue-600 rounded hover:bg-blue-700 text-white transition duration-200"
-                        >
-                            Login
-                        </button>
-                    </div>
+                <div className="flex items-center justify-center h-screen">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#872341]"></div>
                 </div>
                 <Footer/>
             </>
         );
     }
 
-    // If authorized, show token management screen
+    // Admin user management interface
     return (
         <>
             <Navbar routes={routes}/>
-            <div className="container mx-auto p-4  text-white">
+            <div className="container mx-auto p-4 text-white">
                 <h1 className={`font-satoshi text-2xl mt-4 mb-16`}>Blogorithm.</h1>
 
                 <div className="mb-6 flex items-center justify-between">
-                    <button
-                        onClick={generateNewToken}
-                        disabled={isLoading}
-                        className="p-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-600 disabled:text-gray-300 transition duration-200"
-                    >
-                        Generate New Token
-                    </button>
-
-                    <button
-                        onClick={() => {
-                            setIsAuthorized(false);
-                            setPassword('');
-                        }}
-                        className="p-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition duration-200"
-                    >
-                        Logout
-                    </button>
+                    <h2 className="text-xl font-semibold">User Management</h2>
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={() => signOut({ callbackUrl: '/' })}
+                            className="p-2 bg-red-600 text-white rounded hover:bg-red-700 transition duration-200"
+                        >
+                            Sign Out
+                        </button>
+                        <button
+                            onClick={getUsers}
+                            disabled={isLoading}
+                            className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-600 disabled:text-gray-300 transition duration-200"
+                        >
+                            Refresh
+                        </button>
+                    </div>
                 </div>
 
-                {isLoading && !showModal && (
+                {isLoading && (
                     <div className="flex justify-center my-4">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                     </div>
@@ -208,71 +128,85 @@ export default function AuthorizePage() {
                     <table className="min-w-full bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
                         <thead className="bg-gray-700">
                         <tr>
-                            <th className="p-3 border border-gray-600 text-left">Serial</th>
-                            <th className="p-3 border border-gray-600 text-left">Token Preview</th>
-                            <th className="p-3 border border-gray-600 text-left">Created At</th>
+                            <th className="p-3 border border-gray-600 text-left">User</th>
+                            <th className="p-3 border border-gray-600 text-left">Email</th>
+                            <th className="p-3 border border-gray-600 text-left">Role</th>
+                            <th className="p-3 border border-gray-600 text-left">Joined</th>
                             <th className="p-3 border border-gray-600 text-left">Actions</th>
                         </tr>
                         </thead>
                         <tbody>
-                        {tokens.map((token, index) => (
-                            <tr key={token.id} className="hover:bg-gray-700">
-                                <td className="p-3 border border-gray-600">{index + 1}</td>
-                                <td className="p-3 border border-gray-600 font-mono">{token.value.substring(0, 8)}...</td>
-                                <td className="p-3 border border-gray-600">{formatDate(token.createdAt)}</td>
+                        {users.map((user) => (
+                            <tr key={user.id} className="hover:bg-gray-700">
                                 <td className="p-3 border border-gray-600">
-                                    <button
-                                        onClick={() => copyToClipboard(token.value)}
-                                        className="mr-2 p-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-200"
-                                    >
-                                        Copy Link
-                                    </button>
-                                    <button
-                                        onClick={() => deleteTokenById(token.id)}
-                                        className="p-1 bg-red-600 text-white rounded hover:bg-red-700 transition duration-200"
-                                    >
-                                        Delete
-                                    </button>
+                                    <div className="flex items-center space-x-3">
+                                        {user.image && (
+                                            <img src={user.image} alt={user.name} className="w-8 h-8 rounded-full" />
+                                        )}
+                                        <span>{user.name}</span>
+                                    </div>
+                                </td>
+                                <td className="p-3 border border-gray-600">{user.email}</td>
+                                <td className="p-3 border border-gray-600">
+                    <span className={`px-2 py-1 rounded text-xs ${
+                        user.role === UserRole.ADMIN
+                            ? 'bg-purple-900 text-purple-200'
+                            : user.role === UserRole.WRITER
+                                ? 'bg-green-900 text-green-200'
+                                : user.role === UserRole.PENDING
+                                    ? 'bg-yellow-900 text-yellow-200'
+                                    : 'bg-gray-700 text-gray-300'
+                    }`}>
+                      {user.role}
+                    </span>
+                                </td>
+                                <td className="p-3 border border-gray-600">{formatDate(user.createdAt)}</td>
+                                <td className="p-3 border border-gray-600">
+                                    {user.role === UserRole.ADMIN ? (
+                                        <span className="text-gray-500">Admin</span>
+                                    ) : user.role === UserRole.WRITER ? (
+                                        <button
+                                            onClick={() => handleUpdateUserRole(user.email, UserRole.VISITOR)}
+                                            className="mr-2 p-1 bg-red-600 text-white rounded hover:bg-red-700 transition duration-200"
+                                        >
+                                            Revoke Access
+                                        </button>
+                                    ) : user.role === UserRole.PENDING ? (
+                                        <>
+                                            <button
+                                                onClick={() => handleUpdateUserRole(user.email, UserRole.WRITER)}
+                                                className="mr-2 p-1 bg-green-600 text-white rounded hover:bg-green-700 transition duration-200"
+                                            >
+                                                Approve
+                                            </button>
+                                            <button
+                                                onClick={() => handleUpdateUserRole(user.email, UserRole.VISITOR)}
+                                                className="p-1 bg-gray-600 text-white rounded hover:bg-gray-700 transition duration-200"
+                                            >
+                                                Deny
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleUpdateUserRole(user.email, UserRole.WRITER)}
+                                            className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-200"
+                                        >
+                                            Grant Access
+                                        </button>
+                                    )}
                                 </td>
                             </tr>
                         ))}
-                        {tokens.length === 0 && (
+                        {users.length === 0 && !isLoading && (
                             <tr>
-                                <td colSpan={4} className="p-3 border border-gray-600 text-center">
-                                    No tokens found. Generate one to get started.
+                                <td colSpan={5} className="p-3 border border-gray-600 text-center">
+                                    No users found.
                                 </td>
                             </tr>
                         )}
                         </tbody>
                     </table>
                 </div>
-
-                {/* Modal for new token */}
-                {showModal && newToken && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-opacity-70 z-50">
-                        <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full border border-gray-700 shadow-xl">
-                            <h2 className="text-xl font-bold mb-4 text-white">New Token Generated</h2>
-                            <p className="mb-2 text-gray-300">Use this link to access the write page:</p>
-                            <div className="p-3 bg-gray-900 rounded-md mb-4 break-all font-mono text-sm text-blue-400 border border-gray-700">
-                                {`${window.location.origin}/write?token=${newToken.value}`}
-                            </div>
-                            <div className="flex justify-end space-x-2">
-                                <button
-                                    onClick={() => copyToClipboard(newToken.value)}
-                                    className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-200"
-                                >
-                                    Copy to Clipboard
-                                </button>
-                                <button
-                                    onClick={() => setShowModal(false)}
-                                    className="p-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition duration-200"
-                                >
-                                    Close
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
             <Footer />
         </>
