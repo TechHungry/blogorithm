@@ -33,9 +33,10 @@ export type SanityPayload = {
     content_type: string,
     summary: string,
     tags: any[],
-    newbody: string,
+    bodyHtml: string,
     coverImage: coverImageType | null,
     slug: {
         current: string
-    }
+    },
+    _draft: boolean
 }

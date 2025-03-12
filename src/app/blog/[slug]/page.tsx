@@ -47,7 +47,7 @@ export default async function Blog(props: Params) {
             date={post.publishedAt}
             author={post.author}
           />
-          <PostBody body={post.body}/>
+          <PostBody body={post.bodyHtml}/>
         </article>
       </Column>
       <Footer />
