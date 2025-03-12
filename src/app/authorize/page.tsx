@@ -50,22 +50,40 @@ export default function AuthorizePage() {
         }
     };
 
-    // Function to update user role
+    // Function to update user role with automatic refresh
     const handleUpdateUserRole = async (email: string, role: UserRole) => {
         setIsLoading(true);
         try {
-            const success = await updateUserRole(email, role);
+            // First update the role via API
+            const response = await fetch('/api/users/role', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, role }),
+            });
 
-            if (success) {
-                // Update user in local state
-                setUsers(prevUsers =>
-                    prevUsers.map(user =>
-                        user.email === email ? { ...user, role } : user
-                    )
-                );
-            } else {
-                alert('Failed to update user role. Please try again.');
+            const data = await response.json();
+
+            if (!response.ok) {
+                console.error('Error response from server:', data);
+                alert(`Failed to update user role: ${data.error || 'Unknown error'}`);
+                return;
             }
+
+            console.log(`Role update succeeded for ${email}: ${role}`);
+
+            // Update local state immediately for responsive UI
+            setUsers(prevUsers =>
+                prevUsers.map(user =>
+                    user.email === email ? { ...user, role } : user
+                )
+            );
+
+            // Fetch fresh data to ensure complete consistency
+            setTimeout(() => {
+                getUsers();
+            }, 1000);
         } catch (error) {
             console.error('Error updating user role:', error);
             alert('Error updating user role. Please check console for details.');

@@ -58,6 +58,7 @@ export async function fetchUsers(): Promise<User[]> {
 }
 
 // Client-side function to update user role
+
 export async function updateUserRole(email: string, role: UserRole): Promise<boolean> {
     try {
         const response = await fetch('/api/users/role', {
@@ -68,11 +69,14 @@ export async function updateUserRole(email: string, role: UserRole): Promise<boo
             body: JSON.stringify({ email, role }),
         });
 
+        const data = await response.json();
+
         if (!response.ok) {
-            throw new Error('Failed to update user role');
+            console.error('Error updating role:', data.error);
+            return false;
         }
 
-        const data = await response.json();
+        console.log(`Role update request sent for ${email} with new role ${role}`);
         return data.success;
     } catch (error) {
         console.error('Error updating user role:', error);

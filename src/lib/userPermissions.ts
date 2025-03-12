@@ -70,32 +70,52 @@ export async function isAdmin(email: string): Promise<boolean> {
     }
 }
 
+// Add this new helper function to src/lib/userPermissions.ts
+async function updateUserInList(updatedUser: User): Promise<void> {
+    try {
+        const client = await getRedisClient();
+        const usersListStr = await client.get(USERS_LIST_KEY);
+
+        if (!usersListStr) return;
+
+        const usersList: User[] = JSON.parse(usersListStr);
+        const updatedList = usersList.map(user =>
+            user.email === updatedUser.email ? { ...user, role: updatedUser.role } : user
+        );
+
+        await client.set(USERS_LIST_KEY, JSON.stringify(updatedList));
+        console.log(`Updated ${updatedUser.email} in users list`);
+    } catch (error) {
+        console.error('Error updating user in list:', error);
+    }
+}
+
 // Set user role
 export async function setUserRole(email: string, role: UserRole): Promise<void> {
     try {
         const client = await getRedisClient();
         const userKey = `user:${email}`;
+        const roleKey = `user:${email}:role`;
 
-        // Get existing user data if any
+        // Update both the complete user object and the dedicated role key
         const userData = await client.get(userKey);
-        let user: User | null = null;
 
         if (userData) {
-            user = JSON.parse(userData);
-            if (user) {
-                user.role = role;
-            }
+            const user = JSON.parse(userData);
+            user.role = role;
+            await client.set(userKey, JSON.stringify(user));
+
+            // Also update the users list
+            await updateUserInList(user);
         }
 
-        // Update or save user role
-        if (user) {
-            await client.set(userKey, JSON.stringify(user));
-        } else {
-            // Just set the role key if we don't have complete user data
-            await client.set(`user:${email}:role`, role);
-        }
+        // Always set the dedicated role key
+        await client.set(roleKey, role);
+
+        console.log(`Role set for ${email} to ${role} in Redis`);
     } catch (error) {
         console.error('Error setting user role:', error);
+        throw error;
     }
 }
 

@@ -1,9 +1,8 @@
 // src/app/api/users/role/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { getUserRole, setUserRole, UserRole, getUser, saveUser } from '@/lib/userPermissions';
+import { getUserRole, setUserRole, UserRole, getUser } from '@/lib/userPermissions';
 
-// PUT to update user role - only accessible by admin
 export async function PUT(request: NextRequest) {
     try {
         // Get current session
@@ -38,20 +37,15 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: 'Cannot change admin role' }, { status: 403 });
         }
 
-        // Get the user
-        const user = await getUser(email);
+        // Set user role - this now updates both the user object and the dedicated role key
+        await setUserRole(email, role as UserRole);
 
-        if (!user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
-
-        // Update user role
-        user.role = role as UserRole;
-        await saveUser(user);
+        // Log the change
+        console.log(`Role updated for ${email} to ${role} by admin ${session.user.email}`);
 
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Error updating user role:', error);
-        return NextResponse.json({ error: 'Server error' }, { status: 500 });
+        return NextResponse.json({ error: 'Server error', details: String(error) }, { status: 500 });
     }
 }
