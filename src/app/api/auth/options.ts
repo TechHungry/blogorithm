@@ -55,5 +55,5 @@ export const authOptions: NextAuthOptions = {
         error: '/auth/error',
     },
     secret: process.env.NEXTAUTH_SECRET,
-    debug: true, // Enable debug to see more info in logs
+    debug: process.env.NODE_ENV === 'development', // Enable debug in development
 };

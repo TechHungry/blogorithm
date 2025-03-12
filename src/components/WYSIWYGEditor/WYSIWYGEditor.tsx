@@ -87,6 +87,7 @@ const WYSIWYGEditor = () => {
         tagInputRef.current?.focus();
     };
 
+    // Update this part in your WYSIWYGEditor.tsx
     useEffect(() => {
         if (editorRef.current) {
             editorRef.current.contentEditable = 'true';
@@ -105,6 +106,23 @@ const WYSIWYGEditor = () => {
                 }
             };
 
+            // Handle input separately to remove empty class when content is added
+            const handleInput = () => {
+                if (editorRef.current) {
+                    const isEmpty = editorRef.current.innerHTML === '' ||
+                        editorRef.current.innerHTML === '<br>' ||
+                        editorRef.current.innerHTML === '<p></p>';
+
+                    if (isEmpty) {
+                        editorRef.current.classList.add('empty');
+                    } else {
+                        editorRef.current.classList.remove('empty');
+                    }
+
+                    setContent(editorRef.current.innerHTML);
+                }
+            };
+
             // Initialize with empty class if no content
             if (editorRef.current.innerHTML === '') {
                 editorRef.current.classList.add('empty');
@@ -112,16 +130,7 @@ const WYSIWYGEditor = () => {
 
             editorRef.current.addEventListener('focus', handleFocus);
             editorRef.current.addEventListener('blur', handleBlur);
-
-            // Save content on input
-            const handleInput = () => {
-                if (editorRef.current) {
-                    setContent(editorRef.current.innerHTML);
-                }
-            };
-
             editorRef.current.addEventListener('input', handleInput);
-            editorRef.current.focus();
 
             return () => {
                 editorRef.current?.removeEventListener('focus', handleFocus);
@@ -147,10 +156,27 @@ const WYSIWYGEditor = () => {
         setIsSubmitting(true);
 
         try {
+            // Create a temporary div to sanitize the HTML content
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+
+            // Remove styling classes but preserve structure and inline styles if needed
+            const elements = tempDiv.querySelectorAll('*');
+            elements.forEach(el => {
+                // Remove class attributes
+                el.removeAttribute('class');
+
+                // Or completely remove style attribute if you want no styling at all
+                el.removeAttribute('style');
+            });
+
+            // Get the sanitized HTML content
+            const sanitizedContent = tempDiv.innerHTML;
+
             // Create FormData object instead of JSON
             const formData = new FormData();
             formData.append('title', title);
-            formData.append('content', content);
+            formData.append('content', sanitizedContent); // Use sanitized content
             formData.append('summary', summary);
 
             // Add tags as JSON string
@@ -166,8 +192,6 @@ const WYSIWYGEditor = () => {
             // Submit to internal API route that connects to Sanity
             const response = await fetch('/api/submit-blog', {
                 method: 'POST',
-                // Don't set Content-Type header when using FormData
-                // The browser will automatically set it to multipart/form-data with the correct boundary
                 body: formData,
             });
 
@@ -176,7 +200,6 @@ const WYSIWYGEditor = () => {
             if (data.success) {
                 console.log('Content submitted successfully to Sanity!', data);
                 alert('Your blog post has been submitted successfully!');
-
             } else {
                 throw new Error(data.message || 'Failed to submit content');
             }

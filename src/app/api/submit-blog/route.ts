@@ -27,12 +27,13 @@ export async function POST(req: Request) {
             title: title,
             slug: {current: titleToSlug(title)},
             publishedAt: new Date().toISOString(),
-            status: "DRAFT",
+            status: "PUBLISHED",
             content_type: "blog",
             summary: "Summary of the blog post",
             tags: tags,
-            newbody: content,
-            coverImage: null
+            bodyHtml: content,
+            coverImage: null,
+            _draft: true
         };
 
         // Process the image file if it exists
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
             console.log('Payload ready for Sanity:', payload);
             const result = await createPost(payload);
 
-            return NextResponse.json({success: true, id: result._id});
+            return NextResponse.json({success: true, id: result.id});
         }
     } catch
         (error) {

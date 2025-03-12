@@ -82,10 +82,18 @@
     margin-bottom: 1em;
 }
 
-/* Empty editor placeholder */
-[contenteditable="true"].empty:before {
+/* This ensures the placeholder text appears as an overlay without affecting cursor position */
+[contenteditable].empty:before {
     content: attr(data-placeholder);
-    color: #718096;
+    color: #6b7280; /* text-gray-500 equivalent */
     font-style: italic;
+    position: absolute;
     pointer-events: none;
+    left: 1rem; /* Match your padding-left (p-4 = 1rem) */
+    top: 1rem; /* Match your padding-top (p-4 = 1rem) */
+}
+
+/* Make sure the contenteditable div has position relative for proper placeholder positioning */
+[contenteditable] {
+    position: relative;
 }

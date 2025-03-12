@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { getUserRole } from '@/lib/userPermissions';
 
 /**
- * This route refreshes the user's session by forcing an update of their role from Redis
+ * This route refreshes the user's session by checking their current role in Redis
  * It's particularly useful after an admin changes a user's role, without requiring them to sign out
  */
 export async function GET(request: NextRequest) {
@@ -19,8 +19,12 @@ export async function GET(request: NextRequest) {
 
         // Get updated role from Redis
         const updatedRole = await getUserRole(session.user.email);
+        const currentRole = (session.user as any).role;
 
-        // Return the updated role - the client will use this to guide the user
+        // Check if role has changed
+        const roleUpdated = updatedRole !== currentRole;
+
+        // Return the results
         return NextResponse.json({
             success: true,
             session: {
@@ -29,10 +33,15 @@ export async function GET(request: NextRequest) {
                     role: updatedRole
                 }
             },
-            roleUpdated: (session.user as any).role !== updatedRole
+            roleUpdated,
+            currentRole,
+            updatedRole
         });
     } catch (error) {
         console.error('Error refreshing session:', error);
-        return NextResponse.json({ error: 'Server error' }, { status: 500 });
+        return NextResponse.json({
+            error: 'Server error',
+            details: String(error)
+        }, { status: 500 });
     }
 }

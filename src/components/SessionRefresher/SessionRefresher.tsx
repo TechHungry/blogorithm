@@ -1,195 +1,91 @@
-// src/app/request-access/page.tsx
+// src/components/SessionRefresher/SessionRefresher.tsx
 'use client';
 
-import {useState, useEffect} from 'react';
-import {useSession, signIn, signOut} from 'next-auth/react';
-import {useRouter} from 'next/navigation';
-import Navbar from '@/components/Navbar';
-import {Footer} from '@/components/Footer';
-import {routes} from '@/app/resources/config';
-import {UserRole, requestAccess} from '@/lib/clientUserPermissions';
-import SessionRefresher from '@/components/SessionRefresher';
+import React, { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { UserRole } from '@/lib/clientUserPermissions';
 
 interface SessionRefresherProps {
-    onSuccess?: (newRole: UserRole) => void
+    onRoleUpdate?: (newRole: UserRole) => void;
 }
 
-export default function RequestAccessPage({onSuccess}: SessionRefresherProps) {
-    const {data: session, status} = useSession();
-    const router = useRouter();
-    const [requestStatus, setRequestStatus] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+const SessionRefresher: React.FC<SessionRefresherProps> = ({ onRoleUpdate }) => {
+    const { data: session, update } = useSession();
+    const [isChecking, setIsChecking] = useState(false);
+    const [status, setStatus] = useState<'idle' | 'checking' | 'success' | 'unchanged' | 'error'>('idle');
 
-    useEffect(() => {
-        // If not authenticated, prompt sign in
-        if (status === 'unauthenticated') {
-            signIn('google');
-            return;
-        }
-
-        // If authenticated, check current role from session
-        if (status === 'authenticated') {
-            const userRole = (session.user as any)?.role;
-
-            // If already writer or admin, redirect to write page
-            if (userRole === UserRole.WRITER || userRole === UserRole.ADMIN) {
-                router.push('/write');
-            }
-            // If pending, show pending message
-            else if (userRole === UserRole.PENDING) {
-                setRequestStatus('pending');
-            }
-        }
-    }, [session, status, router]);
-
-    const handleRequestAccess = async () => {
-        if (!session?.user?.email) return;
-
-        setIsLoading(true);
+    const checkAccess = async () => {
+        setIsChecking(true);
+        setStatus('checking');
 
         try {
-            const success = await requestAccess(session.user.email);
+            // Call the API route to check for role updates
+            const response = await fetch('/api/auth/refresh-session');
 
-            if (success) {
-                setRequestStatus('success');
+            if (!response.ok) {
+                throw new Error('Failed to refresh session');
+            }
+
+            const data = await response.json();
+
+            if (data.roleUpdated) {
+                // Update the client-side session with next-auth's update() function
+                await update();
+                setStatus('success');
+
+                if (onRoleUpdate && data.session?.user?.role) {
+                    onRoleUpdate(data.session.user.role as UserRole);
+                }
             } else {
-                setRequestStatus('error');
+                setStatus('unchanged');
             }
         } catch (error) {
-            console.error('Error requesting access:', error);
-            setRequestStatus('error');
+            console.error('Error refreshing session:', error);
+            setStatus('error');
         } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleSignOutAndIn = async () => {
-        await signOut({redirect: false});
-        signIn('google', {callbackUrl: '/write'});
-    };
-
-    // Handle successful role update
-    const handleSessionUpdate = (newRole: UserRole) => {
-        if (newRole === UserRole.WRITER || newRole === UserRole.ADMIN) {
-            setTimeout(() => router.push('/write'), 1500);
+            setIsChecking(false);
         }
     };
 
     return (
-        <>
-            <Navbar routes={routes}/>
-            <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 px-4">
-                <div className="w-full max-w-md p-6 bg-gray-800 rounded-lg shadow-xl border border-gray-700 text-white">
-                    <h1 className="text-2xl font-bold mb-6 text-center">Writer Access Request</h1>
+        <div className="mt-4">
+            <button
+                onClick={checkAccess}
+                disabled={isChecking}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            >
+                {isChecking ? (
+                    <span className="flex items-center justify-center">
+            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Checking...
+          </span>
+                ) : (
+                    'Check Access Status'
+                )}
+            </button>
 
-                    {status === 'loading' && (
-                        <div className="flex justify-center my-6">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#872341]"></div>
-                        </div>
-                    )}
-
-                    {status === 'authenticated' && !requestStatus && (
-                        <div className="space-y-6">
-                            <p>
-                                Hello, <span className="font-medium">{session?.user?.name || 'User'}</span>! You need
-                                special access to create blog posts on this platform.
-                            </p>
-                            <p>
-                                Click the button below to request writer access. An administrator will review your
-                                request.
-                            </p>
-                            <div className="flex justify-center">
-                                <button
-                                    onClick={handleRequestAccess}
-                                    disabled={isLoading}
-                                    className="px-4 py-2 bg-[#872341] text-white rounded-md hover:bg-[#6f1b36] transition duration-200 disabled:bg-gray-600 disabled:cursor-not-allowed"
-                                >
-                                    {isLoading ? 'Requesting...' : 'Request Writer Access'}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {requestStatus === 'pending' && (
-                        <div className="space-y-4">
-                            <div className="bg-yellow-900/30 p-4 rounded-md border border-yellow-800">
-                                <p className="text-yellow-300 font-medium">Your access request is pending approval</p>
-                                <p className="mt-2 text-gray-300">
-                                    An administrator will review your request soon.
-                                </p>
-                            </div>
-
-                            {/* Session Refresh Section */}
-                            <div className="mt-4 p-4 bg-gray-700/30 rounded-md border border-gray-700">
-                                <h3 className="text-lg font-medium mb-2">Already approved?</h3>
-                                <p className="text-gray-300 mb-4">
-                                    If an administrator has approved your request, you can check your access status or
-                                    sign out and back in to refresh your permissions.
-                                </p>
-
-                                {/* New SessionRefresher component */}
-                                <SessionRefresher onSuccess={handleSessionUpdate}/>
-
-                                <div className="mt-4 border-t border-gray-700 pt-4">
-                                    <p className="text-gray-400 text-sm mb-2">Alternative method:</p>
-                                    <button
-                                        onClick={handleSignOutAndIn}
-                                        className="w-full px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition duration-200"
-                                    >
-                                        Sign Out and Sign Back In
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-center mt-4">
-                                <button
-                                    onClick={() => router.push('/')}
-                                    className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition duration-200"
-                                >
-                                    Return to Homepage
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {requestStatus === 'success' && (
-                        <div className="bg-green-900/30 p-4 rounded-md border border-green-800">
-                            <p className="text-green-300 font-medium">Request Submitted Successfully!</p>
-                            <p className="mt-2 text-gray-300">
-                                Your request for writer access has been submitted. An administrator will review it soon.
-                                <span className="block mt-2 font-medium">Important: After your request is approved, you'll need to refresh your session for the changes to take effect.</span>
-                            </p>
-                            <div className="flex justify-center mt-4">
-                                <button
-                                    onClick={() => router.push('/')}
-                                    className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition duration-200"
-                                >
-                                    Return to Homepage
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {requestStatus === 'error' && (
-                        <div className="bg-red-900/30 p-4 rounded-md border border-red-800">
-                            <p className="text-red-300 font-medium">Something went wrong!</p>
-                            <p className="mt-2 text-gray-300">
-                                There was an error submitting your request. Please try again later or contact the
-                                administrator.
-                            </p>
-                            <div className="flex justify-center mt-4">
-                                <button
-                                    onClick={() => setRequestStatus(null)}
-                                    className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition duration-200"
-                                >
-                                    Try Again
-                                </button>
-                            </div>
-                        </div>
-                    )}
+            {status === 'success' && (
+                <div className="mt-2 p-2 bg-green-900/30 border border-green-800 rounded text-green-200">
+                    Your session has been updated with your new permissions!
                 </div>
-            </div>
-            <Footer/>
-        </>
+            )}
+
+            {status === 'unchanged' && (
+                <div className="mt-2 p-2 bg-yellow-900/30 border border-yellow-800 rounded text-yellow-200">
+                    Your access status hasn&#39;t changed yet. Please try again later.
+                </div>
+            )}
+
+            {status === 'error' && (
+                <div className="mt-2 p-2 bg-red-900/30 border border-red-800 rounded text-red-200">
+                    There was an error checking your access status. Please try again.
+                </div>
+            )}
+        </div>
     );
-}
+};
+
+export default SessionRefresher;
