@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    output: 'standalone', // This creates a standalone build with better optimization
+
+    reactStrictMode: true,
     images: {
         domains: ['cdn.sanity.io'],
     },

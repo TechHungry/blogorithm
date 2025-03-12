@@ -20,7 +20,7 @@ export function Footer() {
               View on GitHub
             </a>
             <a
-              href={GITHUB_URL}
+              href={`/about`}
               className="mx-3 font-bold hover:underline"
             >
               Reach Us
