@@ -24,14 +24,12 @@ export default async function BlogHome() {
 	return (
 		<>
 			<Navbar routes={routes}/>
-			<Column classes={`mt-32`}>
-				<div className='relative'>
+				<div className='relative mt-28 mx-16'>
 					<div className='me-auto my-24 px-12'>
 						<div className='my-12'>
 							<h1 className="lg:text-8xl md:text-6xl text-6xl font-extrabold font-satoshi lg:leading-tight text-center">Blogs.</h1>
-							{/* <h1 className="lg:text-4xl md:text-5xl text-4xl font-extrabold font-satoshi lg:leading-tight pe-4 self-start">on Blogorithm.</h1> */}
 						</div>
-						<div className="grid lg:grid-cols-2 grid-cols-1 gap-x-12 gap-y-8 my-16">
+						<div className="grid xl:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-x-12 gap-y-12 my-16">
 								{blogs.map((post) => (
 									<div key={post.slug}>
 										<BlogTile post_data={post}/>
@@ -40,7 +38,7 @@ export default async function BlogHome() {
 						</div>
 					</div>
 				</div>
-			</Column>
+			{/*</Column>*/}
 			<Footer />
 		</>
 	);

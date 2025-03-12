@@ -21,7 +21,7 @@ export default function SubscribeForm(): any {
                 className='bg-[#161515] border border-[#872341] rounded-lg p-2 text-white w-full'
                 required
             />
-            <button type='submit' className='bg-[#872341] rounded-lg p-2 text-white w-full mt-2 hover:border hover:border-[#872341] hover:bg-[#161515]'>
+            <button type='submit' className='bg-[#872341] rounded-lg p-2 text-white w-full mt-2 border border-[#872341] hover:bg-[#161515]'>
                 Subscribe
             </button>
         </form>

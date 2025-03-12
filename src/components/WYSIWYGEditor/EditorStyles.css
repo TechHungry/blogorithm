@@ -1,0 +1,91 @@
+/* Editor content styling */
+[contenteditable="true"] {
+    outline: none;
+    /*font-family: 'Satoshi';*/
+}
+
+/* Style for paragraphs */
+[contenteditable="true"] p {
+    margin-bottom: 1em;
+}
+
+/* Heading styles */
+[contenteditable="true"] h1 {
+    font-size: 2em;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+}
+
+[contenteditable="true"] h2 {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+}
+
+[contenteditable="true"] h3 {
+    font-size: 1.25em;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+}
+
+/* List styles */
+[contenteditable="true"] ul {
+    list-style-type: disc;
+    margin-left: 1.5em;
+    margin-bottom: 1em;
+}
+
+[contenteditable="true"] ol {
+    list-style-type: decimal;
+    margin-left: 1.5em;
+    margin-bottom: 1em;
+}
+
+/* Blockquote style */
+[contenteditable="true"] blockquote {
+    border-left: 3px solid #4a5568;
+    padding-left: 1em;
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: 1em;
+    font-style: italic;
+    color: #a0aec0;
+}
+
+/* Code block style */
+[contenteditable="true"] pre {
+    background-color: #2d3748;
+    padding: 0.75em;
+    border-radius: 0.25em;
+    font-family: monospace;
+    white-space: pre-wrap;
+    margin-bottom: 1em;
+}
+
+/* Horizontal rule */
+[contenteditable="true"] hr {
+    border: none;
+    border-top: 1px solid #4a5568;
+    margin: 1em 0;
+}
+
+/* Link style */
+[contenteditable="true"] a {
+    color: #63b3ed;
+    text-decoration: underline;
+}
+
+/* Image style */
+[contenteditable="true"] img {
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 1em;
+}
+
+/* Empty editor placeholder */
+[contenteditable="true"].empty:before {
+    content: attr(data-placeholder);
+    color: #718096;
+    font-style: italic;
+    pointer-events: none;
+}
