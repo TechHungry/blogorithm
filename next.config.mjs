@@ -3,9 +3,7 @@ const nextConfig = {
     output: 'standalone', // This creates a standalone build with better optimization
 
     reactStrictMode: true,
-    experimental: {
-        serverComponentsExternalPackages: ['redis']
-    },
+    serverExternalPackages: ['redis'],
     images: {
         domains: ['cdn.sanity.io'],
     },

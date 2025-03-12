@@ -1,0 +1,57 @@
+/* src/components/PostBody/PostBody.module.css */
+
+/* Text alignment styles */
+.prose [style*="text-align: center"],
+.prose [align="center"] {
+    text-align: center;
+}
+
+.prose [style*="text-align: right"],
+.prose [align="right"] {
+    text-align: right;
+}
+
+.prose [style*="text-align: left"],
+.prose [align="left"] {
+    text-align: left;
+}
+
+/* Code block language display */
+.prose pre {
+    position: relative;
+}
+
+.prose pre[data-language]::before {
+    content: attr(data-language);
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-bottom-left-radius: 0.25rem;
+    color: white;
+    font-family: monospace;
+}
+
+/* Table styles for future use */
+.prose table {
+    @apply w-full border-collapse my-4;
+}
+
+.prose thead {
+    @apply bg-gray-800;
+}
+
+.prose th {
+    @apply font-bold text-left p-2 border border-gray-600;
+}
+
+.prose td {
+    @apply p-2 border border-gray-600;
+}
+
+/* Text highlight for future use */
+.prose mark {
+    @apply bg-yellow-300 text-black px-1;
+}

@@ -106,8 +106,6 @@ export default function RequestAccessPage() {
         }
     };
 
-    console.log("requestStatus", requestStatus);
-
     return (
         <>
             <Navbar routes={routes} />
