@@ -1,21 +1,9 @@
 // src/app/api/fix-admin-role/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { createClient } from 'redis';
 import { getAdminEmail, UserRole } from '@/lib/userPermissions';
+import getRedisClient from "@/clients/redis/client";
 
-// Get Redis client
-async function getRedisClient() {
-    const client = createClient({
-        url: process.env.REDIS_URL || 'redis://localhost:6379'
-    });
-
-    if (!client.isOpen) {
-        await client.connect();
-    }
-
-    return client;
-}
 
 export async function POST(request: NextRequest) {
     try {

@@ -29,7 +29,7 @@ const SessionRefresher: React.FC<SessionRefresherProps> = ({ onRoleUpdate }) => 
             const data = await response.json();
 
             if (data.roleUpdated) {
-                // Update the client-side session with next-auth's update() function
+                // Update the clients-side session with next-auth's update() function
                 await update();
                 setStatus('success');
 

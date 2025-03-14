@@ -1,93 +1,143 @@
 // src/components/WYSIWYGEditor/WYSIWYGEditor.tsx
 'use client';
 
-import React, {useEffect, useRef, useState, DragEvent, ChangeEvent, ClipboardEvent} from 'react';
-import { signOut } from 'next-auth/react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Toolbar from './Toolbar';
 import './EditorStyles.css';
 
-const WYSIWYGEditor = () => {
+interface WYSIWYGEditorProps {
+    initialContent?: string;
+    onContentChange?: (content: string) => void;
+}
+
+const WYSIWYGEditor: React.FC<WYSIWYGEditorProps> = ({
+                                                         initialContent = '',
+                                                         onContentChange
+                                                     }) => {
     const editorRef = useRef<HTMLDivElement>(null);
-    const [content, setContent] = useState<string>('');
-    const [title, setTitle] = useState<string>('');
-    const [tags, setTags] = useState<string[]>([]); // New state for tags
-    const [tagInput, setTagInput] = useState<string>(''); // New state for tag input
-    const [summary, setSummary] = useState<string>(''); // New state for summary
-    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-    const [imageFile, setImageFile] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState('');
-    const tagInputRef = useRef<HTMLInputElement>(null);
+    const [content, setContent] = useState<string>(initialContent);
+    const isUpdatingRef = useRef<boolean>(false);
+    const lastSelectionRef = useRef<{
+        range: Range | null,
+        start: number | null,
+        end: number | null
+    }>({
+        range: null,
+        start: null,
+        end: null
+    });
 
-    // Helper to handle a file object
-    const handleFile = (file: File) => {
-        if (!file) return;
-        setImageFile(file);
-        setPreviewUrl(URL.createObjectURL(file));
-    };
+    // Track if this is the initial render
+    const initialRenderRef = useRef<boolean>(true);
 
-    // File input onChange
-    const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) handleFile(file);
-    };
+    // Set initial content only once
+    useEffect(() => {
+        if (editorRef.current && initialContent && initialRenderRef.current) {
+            editorRef.current.innerHTML = initialContent;
+            initialRenderRef.current = false;
+        }
+    }, [initialContent]);
 
-    // Drag and drop events
-    const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-    };
+    // More robust selection save
+    const saveSelection = useCallback(() => {
+        if (!editorRef.current) return;
 
-    const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        const file = e.dataTransfer.files?.[0];
-        if (file) handleFile(file);
-    };
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0).cloneRange();
 
-    // Clipboard (paste) event
-    const handlePaste = (e: ClipboardEvent<HTMLDivElement>) => {
-        const items = e.clipboardData?.items;
-        if (items) {
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].kind === 'file') {
-                    const file = items[i].getAsFile();
-                    if (file) handleFile(file);
-                }
+            // Also store numeric positions to handle React re-renders better
+            const preSelectionRange = range.cloneRange();
+            preSelectionRange.selectNodeContents(editorRef.current);
+            preSelectionRange.setEnd(range.startContainer, range.startOffset);
+            const start = preSelectionRange.toString().length;
+
+            // Calculate end position
+            preSelectionRange.setEnd(range.endContainer, range.endOffset);
+            const end = preSelectionRange.toString().length;
+
+            lastSelectionRef.current = {
+                range: range,
+                start: start,
+                end: end
+            };
+        }
+    }, []);
+
+    // More robust selection restore
+    const restoreSelection = useCallback(() => {
+        if (!editorRef.current) return;
+
+        const selection = window.getSelection();
+        if (!selection) return;
+
+        // First try to restore by range if available
+        if (lastSelectionRef.current.range) {
+            try {
+                selection.removeAllRanges();
+                selection.addRange(lastSelectionRef.current.range);
+                return;
+            } catch (e) {
+                // If range restoration fails, fall back to position-based approach
+                console.log("Range restoration failed, using position fallback");
             }
         }
-    };
 
-    const handleRemove = () => {
-        if (previewUrl) {
-            URL.revokeObjectURL(previewUrl); // Clean up the object URL
+        // Fall back to position-based approach
+        if (lastSelectionRef.current.start !== null && lastSelectionRef.current.end !== null) {
+            const charIndex = findNodeAndOffsetAtPosition(editorRef.current, lastSelectionRef.current.start);
+            const endCharIndex = findNodeAndOffsetAtPosition(editorRef.current, lastSelectionRef.current.end);
+
+            if (charIndex && endCharIndex) {
+                const range = document.createRange();
+                range.setStart(charIndex.node, charIndex.offset);
+                range.setEnd(endCharIndex.node, endCharIndex.offset);
+
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
         }
-        setImageFile(null);
-        setPreviewUrl('');
-    };
+    }, []);
 
-    // Tag input handlers
-    const handleTagInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setTagInput(e.target.value);
-    };
+    // Helper function to find a node and offset based on position
+    const findNodeAndOffsetAtPosition = (rootNode: Node, position: number): { node: Node, offset: number } | null => {
+        const treeWalker = document.createTreeWalker(
+            rootNode,
+            NodeFilter.SHOW_TEXT,
+            { acceptNode: (node) => NodeFilter.FILTER_ACCEPT }
+        );
 
-    const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && tagInput.trim()) {
-            e.preventDefault();
-            setTags([...tags, tagInput.trim()]);
-            setTagInput('');
-        } else if (e.key === 'Backspace' && !tagInput && tags.length > 0) {
-            // Remove the last tag when backspace is pressed and input is empty
-            setTags(tags.slice(0, -1));
+        let currentPosition = 0;
+        let currentNode = treeWalker.nextNode();
+
+        while (currentNode) {
+            const nodeLength = currentNode.textContent?.length || 0;
+
+            if (currentPosition + nodeLength >= position) {
+                return {
+                    node: currentNode,
+                    offset: position - currentPosition
+                };
+            }
+
+            currentPosition += nodeLength;
+            currentNode = treeWalker.nextNode();
         }
+
+        // If we couldn't find the position, return the last position
+        if (currentPosition > 0) {
+            const lastNode = rootNode.lastChild;
+            if (lastNode) {
+                return {
+                    node: lastNode,
+                    offset: (lastNode.textContent?.length || 0)
+                };
+            }
+        }
+
+        return null;
     };
 
-    const removeTag = (index: number) => {
-        setTags(tags.filter((_, i) => i !== index));
-    };
-
-    const handleTagContainerClick = () => {
-        tagInputRef.current?.focus();
-    };
-
-    // Update this part in your WYSIWYGEditor.tsx
     useEffect(() => {
         if (editorRef.current) {
             editorRef.current.contentEditable = 'true';
@@ -98,17 +148,31 @@ const WYSIWYGEditor = () => {
                 if (editorRef.current?.innerHTML === '') {
                     editorRef.current.classList.remove('empty');
                 }
+                // Don't save selection on focus, wait for user interaction
             };
 
             const handleBlur = () => {
                 if (editorRef.current?.innerHTML === '') {
                     editorRef.current.classList.add('empty');
                 }
+                // Save selection on blur
+                saveSelection();
             };
 
-            // Handle input separately to remove empty class when content is added
+            // Debounced content change handler to reduce frequency of state updates
+            let inputTimeout: NodeJS.Timeout;
             const handleInput = () => {
                 if (editorRef.current) {
+                    // Save selection immediately before any changes
+                    saveSelection();
+
+                    // Clear previous timeout
+                    clearTimeout(inputTimeout);
+
+                    // If we're already handling an update, skip to avoid recursion
+                    if (isUpdatingRef.current) return;
+                    isUpdatingRef.current = true;
+
                     const isEmpty = editorRef.current.innerHTML === '' ||
                         editorRef.current.innerHTML === '<br>' ||
                         editorRef.current.innerHTML === '<p></p>';
@@ -119,7 +183,24 @@ const WYSIWYGEditor = () => {
                         editorRef.current.classList.remove('empty');
                     }
 
-                    setContent(editorRef.current.innerHTML);
+                    const newContent = editorRef.current.innerHTML;
+
+                    // Debounce content updates to parent component
+                    inputTimeout = setTimeout(() => {
+                        // Set local state
+                        setContent(newContent);
+
+                        // Only call the callback if content actually changed
+                        if (onContentChange && newContent !== content) {
+                            onContentChange(newContent);
+                        }
+
+                        // Make sure to restore selection after React updates
+                        requestAnimationFrame(() => {
+                            restoreSelection();
+                            isUpdatingRef.current = false;
+                        });
+                    }, 50); // Small debounce to batch updates
                 }
             };
 
@@ -128,227 +209,51 @@ const WYSIWYGEditor = () => {
                 editorRef.current.classList.add('empty');
             }
 
+            // Handle click events to track cursor position
+            const handleClick = (e: MouseEvent) => {
+                // Use setTimeout to ensure this runs after browser finishes processing the click
+                setTimeout(() => {
+                    saveSelection();
+                }, 0);
+            };
+
+            // Handle keydown events to track cursor position
+            const handleKeyDown = (e: KeyboardEvent) => {
+                // Don't save selection on modifier keys alone
+                if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Enter') {
+                    setTimeout(() => {
+                        saveSelection();
+                    }, 0);
+                }
+            };
+
             editorRef.current.addEventListener('focus', handleFocus);
             editorRef.current.addEventListener('blur', handleBlur);
             editorRef.current.addEventListener('input', handleInput);
+            editorRef.current.addEventListener('click', handleClick);
+            editorRef.current.addEventListener('keydown', handleKeyDown);
 
             return () => {
+                clearTimeout(inputTimeout);
                 editorRef.current?.removeEventListener('focus', handleFocus);
                 editorRef.current?.removeEventListener('blur', handleBlur);
                 editorRef.current?.removeEventListener('input', handleInput);
+                editorRef.current?.removeEventListener('click', handleClick);
+                editorRef.current?.removeEventListener('keydown', handleKeyDown);
             };
         }
-    }, []);
-
-    const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-
-        if (!content || content.trim() === '') {
-            alert('Please add some content before submitting');
-            return;
-        }
-
-        if (!title || title.trim() === '') {
-            alert('Please add a title before submitting');
-            return;
-        }
-
-        setIsSubmitting(true);
-
-        try {
-            // Create a temporary div to sanitize the HTML content
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = content;
-
-            // Remove styling classes but preserve structure and inline styles if needed
-            const elements = tempDiv.querySelectorAll('*');
-            elements.forEach(el => {
-                // Remove class attributes
-                el.removeAttribute('class');
-
-                // Or completely remove style attribute if you want no styling at all
-                el.removeAttribute('style');
-            });
-
-            // Get the sanitized HTML content
-            const sanitizedContent = tempDiv.innerHTML;
-
-            // Create FormData object instead of JSON
-            const formData = new FormData();
-            formData.append('title', title);
-            formData.append('content', sanitizedContent); // Use sanitized content
-            formData.append('summary', summary);
-
-            // Add tags as JSON string
-            formData.append('tags', JSON.stringify(tags));
-
-            // Only append the image if it exists
-            if (imageFile) {
-                formData.append('coverImage', imageFile);
-            } else {
-                throw new Error('CoverImage is required');
-            }
-
-            // Submit to internal API route that connects to Sanity
-            const response = await fetch('/api/submit-blog', {
-                method: 'POST',
-                body: formData,
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                console.log('Content submitted successfully to Sanity!', data);
-                alert('Your blog post has been submitted successfully!');
-            } else {
-                throw new Error(data.message || 'Failed to submit content');
-            }
-        } catch (error) {
-            console.error('Error submitting content:', error);
-            alert('Failed to submit your blog post. Please try again.');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    // Handle sign out
-    const handleSignOut = () => {
-        signOut({ callbackUrl: '/' });
-    };
+    }, [saveSelection, restoreSelection, onContentChange, content]);
 
     return (
-        <div className={`w-full`}>
-            <div className={`py-3 px-2 flex justify-between items-center border-b`}>
-                <h1 className={`font-satoshi text-2xl`}>Blogorithm.</h1>
-                <div className="flex space-x-2">
-                    <button
-                        type="button"
-                        className={`font-satoshi bg-red-600 rounded-lg px-4 py-1 text-white border border-red-600 hover:bg-[#161515] transition duration-200`}
-                        onClick={handleSignOut}
-                    >
-                        Sign Out
-                    </button>
-                    <button
-                        type="submit"
-                        className={`font-satoshi bg-[#872341] rounded-lg px-4 py-1 text-white border border-[#872341] hover:border hover:bg-[#161515] ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
-                        onClick={handleSubmit}
-                        disabled={isSubmitting}
-                    >
-                        {isSubmitting ? 'Submitting...' : 'Submit'}
-                    </button>
-                </div>
-            </div>
-            <div className={`flex flex-col w-full`}>
-                <div className={`flex flex-row justify-between items-center my-2 gap-x-8`}>
-                    <input
-                        type="text"
-                        placeholder="Title"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        className="bg-[#161515] border border-[#872341] rounded-lg p-2 text-white w-1/2"
-                        required
-                    />
-                    <div
-                        className="border border-[#872341] bg-[#161515] rounded p-2 flex items-center justify-between w-1/2"
-                        onDrop={handleDrop}
-                        onDragOver={handleDragOver}
-                        onPaste={handlePaste}
-                    >
-                        {previewUrl ? (
-                            <img
-                                src={previewUrl}
-                                alt="Preview"
-                                className="max-h-8 mb-2 object-contain"
-                            />
-                        ) : (
-                            <p className="text-gray-500 ">Drag or paste image here</p>
-                        )}
-                        <div className={`flex space-x-2`}>
-                            <div className="">
-                                <label
-                                    htmlFor="imageInput"
-                                    className="cursor-pointer font-satoshi bg-[#872341] rounded-lg px-4 py-1 text-white border border-[#872341] hover:border hover:bg-[#161515] transition"
-                                >
-                                    Upload
-                                </label>
-                                <input
-                                    type="file"
-                                    id="imageInput"
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={handleFileSelect}
-                                />
-                            </div>
-                            <div className="">
-                                {previewUrl && (
-                                    <button
-                                        onClick={handleRemove}
-                                        className="cursor-pointer font-satoshi bg-[#872341] rounded-lg px-4 py-1 text-white border border-[#872341] hover:border hover:bg-[#161515] transition"
-                                    >
-                                        x
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* New row with Tags and Summary */}
-                <div className={`flex flex-row justify-between items-center mb-4 gap-x-8`}>
-
-
-
-                    {/* Summary input */}
-                    <textarea
-                        placeholder="Summary"
-                        value={summary}
-                        onChange={(e) => setSummary(e.target.value)}
-                        className="bg-[#161515] border border-[#872341] rounded-lg p-2 text-white w-1/2 h-20 resize-none"
-                    />
-
-                    {/* Tags input */}
-                    <div
-                        className="w-1/2 h-20 p-1 border border-[#872341] rounded-md flex flex-wrap bg-[#161515] focus-within:ring-2 focus-within:ring-[#872341] focus-within:border-[#872341]"
-                        onClick={handleTagContainerClick}
-                    >
-                        {tags.map((tag, index) => (
-                            <div
-                                key={index}
-                                className="flex items-center bg-[#872341] bg-opacity-30 text-white text-sm font-medium mr-2 mb-2 px-2 py-1 rounded-md"
-                            >
-                                <span className="mr-1">{tag}</span>
-                                <button
-                                    type="button"
-                                    onClick={() => removeTag(index)}
-                                    className="text-white hover:text-gray-300 focus:outline-none"
-                                >
-                                    &times;
-                                </button>
-                            </div>
-                        ))}
-                        <input
-                            ref={tagInputRef}
-                            type="text"
-                            value={tagInput}
-                            onChange={handleTagInputChange}
-                            onKeyDown={handleTagKeyDown}
-                            className="flex-grow min-w-[120px] outline-none p-1 mb-2 text-sm bg-transparent text-white"
-                            placeholder={tags.length === 0 ? "Add tags..." : ""}
-                        />
-                    </div>
-                </div>
-            </div>
+        <div className="overflow-hidden shadow-xl bg-gray-800 bg-opacity-30 text-white border border-gray-700 flex flex-col h-[calc(100vh-200px)]">
+            <Toolbar editorRef={editorRef} />
             <div
-                className="overflow-hidden shadow-xl bg-gray-800 bg-opacity-30 text-white border border-gray-700 flex flex-col h-[calc(100vh-200px)]">
-                <Toolbar editorRef={editorRef}/>
-                <div
-                    ref={editorRef}
-                    className="p-4 flex-1 overflow-y-auto outline-none text-gray-100 empty:before:content-[attr(data-placeholder)] empty:before:text-gray-500 empty:before:italic"
-                    data-placeholder="Start writing something amazing..."
-                />
-            </div>
+                ref={editorRef}
+                className="p-4 flex-1 overflow-y-auto outline-none text-gray-100 empty:before:content-[attr(data-placeholder)] empty:before:text-gray-500 empty:before:italic"
+                data-placeholder="Start writing something amazing..."
+            />
         </div>
     );
 };
 
-export default WYSIWYGEditor;
+export default React.memo(WYSIWYGEditor);

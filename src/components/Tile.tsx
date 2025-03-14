@@ -3,7 +3,7 @@ import {formatDate} from "@/app/utils/utils";
 import React from 'react';
 import {SanityDocument} from "next-sanity";
 import imageUrlBuilder from "@sanity/image-url";
-import {client} from "@/sanity/client";
+import {client} from "@/clients/sanity/client";
 import Image from 'next/image';
 import PersonPhoto from "@/components/PersonPhoto";
 
@@ -40,7 +40,7 @@ export function BlogTile({post_data}: BlogTileProps) {
     let slug = post_data.slug.current;
 
     if (!projectId || !dataset) {
-        throw new Error("Sanity client configuration is missing projectId or dataset");
+        throw new Error("Sanity clients configuration is missing projectId or dataset");
     }
     let coverImage = imageUrlBuilder({projectId, dataset}).image(post_data.coverImage).url();
 
@@ -84,7 +84,7 @@ export function BigBlogTile({post_data}: BlogTileProps) {
     const title = post_data.title;
     let slug = post_data.slug.current;
     if (!projectId || !dataset) {
-        throw new Error("Sanity client configuration is missing projectId or dataset");
+        throw new Error("Sanity clients configuration is missing projectId or dataset");
     }
     let coverImage = imageUrlBuilder({projectId, dataset}).image(post_data.coverImage).url();
     return (

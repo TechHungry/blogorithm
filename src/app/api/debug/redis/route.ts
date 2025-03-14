@@ -1,7 +1,7 @@
 // src/app/api/debug/redis/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getRedisClient } from '@/lib/userPermissions';
+import getRedisClient from '@/clients/redis/client';
 import { getServerSession } from 'next-auth';
 
 export async function GET(request: NextRequest) {

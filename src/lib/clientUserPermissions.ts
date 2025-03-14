@@ -1,5 +1,5 @@
 // src/lib/clientUserPermissions.ts
-// This file contains client-safe code with no direct Redis dependencies
+// This file contains clients-safe code with no direct Redis dependencies
 
 export enum UserRole {
     VISITOR = 'visitor',

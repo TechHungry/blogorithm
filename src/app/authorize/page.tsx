@@ -143,7 +143,7 @@ export default function AuthorizePage() {
                 )}
 
                 <div className="overflow-x-auto">
-                    <table className="min-w-full bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+                    <table className="min-w-full bg-[#161515] border border-gray-700 rounded-lg overflow-hidden">
                         <thead className="bg-gray-700">
                         <tr>
                             <th className="p-3 border border-gray-600 text-left">User</th>

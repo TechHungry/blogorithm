@@ -1,12 +1,9 @@
 // import './style.css'
 import Navbar from '@/components/Navbar';
-import Column from '@/components/Column';
 import { BlogTile } from '@/components/Tile';
 import { routes } from '@/app/resources/config';
-import {Post} from "@/interfaces/post";
-import {getAllPosts} from "@/lib/api";
 import { type SanityDocument } from "next-sanity";
-import { client } from "@/sanity/client";
+import { client } from "@/clients/sanity/client";
 import  { Footer } from "@/components/Footer";
 
 const BLOGS_QUERY = `*[

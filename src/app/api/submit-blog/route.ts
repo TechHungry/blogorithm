@@ -1,5 +1,6 @@
 // app/api/submit-blog/route.ts
-import {createPost, client} from "@/components/SanityClient";
+import {createPost} from "@/lib/SanityClient";
+import {client} from "@/clients/sanity/client";
 import {NextResponse} from 'next/server';
 import {SanityPayload} from '@/interfaces/post'
 

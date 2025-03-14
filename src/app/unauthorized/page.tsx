@@ -15,7 +15,7 @@ export default function UnauthorizedPage() {
         <>
             <Navbar routes={routes} />
             <div className="flex items-center justify-center min-h-screen bg-gray-900 px-4">
-                <div className="w-full max-w-md p-6 bg-gray-800 rounded-lg shadow-xl border border-gray-700 text-white">
+                <div className="w-full max-w-md p-6 bg-[#161515] rounded-lg shadow-xl border border-gray-700 text-white">
                     <h1 className="text-2xl font-bold mb-6 text-center">Access Denied</h1>
 
                     <div className="mb-6 p-4 bg-red-900/30 border border-red-800 rounded-md">

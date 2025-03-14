@@ -7,7 +7,7 @@ import {PostBody} from "@/components/PostBody/PostBody";
 import {PostHeader} from "@/components/post-header";
 import {routes} from '@/app/resources/config';
 import {SanityDocument} from "next-sanity";
-import {client} from "@/sanity/client";
+import {client} from "@/clients/sanity/client";
 import imageUrlBuilder from "@sanity/image-url";
 import {Footer} from "@/components/Footer";
 
@@ -29,7 +29,7 @@ export default async function Blog(props: Params) {
 
     const {projectId, dataset} = client.config();
     if (!projectId || !dataset) {
-        throw new Error("Sanity client configuration is missing projectId or dataset");
+        throw new Error("Sanity clients configuration is missing projectId or dataset");
     }
 
     let coverImage = imageUrlBuilder({projectId, dataset}).image(post.coverImage).url()

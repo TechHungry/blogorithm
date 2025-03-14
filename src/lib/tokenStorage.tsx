@@ -1,24 +1,10 @@
-import { createClient } from 'redis';
+import getRedisClient from '@/clients/redis/client';
 import crypto from 'crypto';
 
 interface Token {
     id: string;
     value: string;
     createdAt: string;
-}
-
-// Create a Redis client creator function instead of connecting at the module level
-let redisClient: ReturnType<typeof createClient> | null = null;
-
-async function getRedisClient() {
-    if (!redisClient) {
-        redisClient = createClient({
-            url: process.env.REDIS_URL || 'redis://localhost:6379'
-        });
-        await redisClient.connect();
-    }
-
-    return redisClient;
 }
 
 const TOKENS_KEY = 'auth_tokens';

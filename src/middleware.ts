@@ -71,5 +71,12 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/write', '/authorize']
+    matcher: [
+        '/write',
+        '/authorize',
+        '/admin/:path*',
+        '/profile',
+        '/profile/new-post',
+        '/profile/edit/:path*'
+    ]
 };
