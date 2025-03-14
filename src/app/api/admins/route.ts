@@ -1,22 +1,9 @@
 // src/app/api/admins/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { createClient } from 'redis';
+import getRedisClient from "@/clients/redis/client";
 import { getAdminEmail, getUserRole, getUsers } from '@/lib/userPermissions';
 import { UserRole } from '@/lib/clientUserPermissions';
-
-// Function to get Redis client
-async function getRedisClient() {
-    const client = createClient({
-        url: process.env.REDIS_URL || 'redis://localhost:6379'
-    });
-
-    if (!client.isOpen) {
-        await client.connect();
-    }
-
-    return client;
-}
 
 // GET all admins - only accessible by admin
 export async function GET(request: NextRequest) {

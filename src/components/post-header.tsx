@@ -1,10 +1,11 @@
+// src/components/post-header.tsx
 import Avatar from "./avatar";
 import CoverImage from "./cover-image";
 import DateFormatter from "./date-formatter";
 import {PostTitle} from "@/components/post-title";
 import imageUrlBuilder from "@sanity/image-url";
 import {SanityDocument} from "next-sanity";
-import {client} from "@/sanity/client";
+import {client} from "@/clients/sanity/client";
 
 type Props = {
     title: string;
@@ -17,7 +18,7 @@ type Props = {
 export async function PostHeader({title, coverImage, date, authors}: Props) {
     const {projectId, dataset} = client.config();
     if (!projectId || !dataset) {
-        throw new Error("Sanity client configuration is missing projectId or dataset");
+        throw new Error("Sanity clients configuration is missing projectId or dataset");
     }
     return (
         <>
@@ -26,9 +27,14 @@ export async function PostHeader({title, coverImage, date, authors}: Props) {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {authors.map((author: SanityDocument) => (
                         <div className={`flex flex-row items-center`} key={author._id}>
-                            <Avatar name={author.name}
-                                    picture={imageUrlBuilder({projectId, dataset}).image(author.profileImage).url()}
-                                    date={date}/>
+                            <Avatar
+                                name={author.name}
+                                picture={author.profileImage ?
+                                    imageUrlBuilder({projectId, dataset}).image(author.profileImage).url() :
+                                    undefined
+                                }
+                                date={date}
+                            />
                         </div>
                     ))}
                 </div>
@@ -37,7 +43,6 @@ export async function PostHeader({title, coverImage, date, authors}: Props) {
                 <CoverImage title={title} src={coverImage}/>
             </div>
             <hr className={`bg-gray-500`}/>
-
         </>
     );
 }

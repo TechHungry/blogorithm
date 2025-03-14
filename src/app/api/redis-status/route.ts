@@ -1,6 +1,6 @@
 // src/app/api/redis-status/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from 'redis';
+import { createClient } from "redis";
 
 export async function GET(request: NextRequest) {
     try {

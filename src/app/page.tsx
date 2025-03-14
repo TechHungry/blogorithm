@@ -8,7 +8,7 @@ import {routes} from '@/app/resources/config';
 import {IconButton} from "@/components/Icons";
 import SubscribeForm from '@/components/SubscribeForm';
 import {type SanityDocument} from "next-sanity";
-import {client} from "@/sanity/client";
+import {client} from "@/clients/sanity/client";
 import {Footer} from "@/components/Footer";
 const BLOGS_QUERY = `*[
   _type == "post" && status == "PUBLISHED"

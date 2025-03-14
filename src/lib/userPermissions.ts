@@ -1,7 +1,7 @@
 // src/lib/userPermissions.ts
 // Note: We're removing the 'use server' directive since we'll handle server actions differently
 
-import { createClient } from 'redis';
+import getRedisClient from '@/clients/redis/client';
 
 export enum UserRole {
     VISITOR = 'visitor',
@@ -17,20 +17,6 @@ export interface User {
     image?: string;
     role: UserRole;
     createdAt: string;
-}
-
-// Redis client setup
-let redisClient: ReturnType<typeof createClient> | null = null;
-
-export async function getRedisClient() {
-    if (!redisClient) {
-        redisClient = createClient({
-            url: process.env.REDIS_URL || 'redis://localhost:6379'
-        });
-        await redisClient.connect();
-    }
-
-    return redisClient;
 }
 
 // Keys for Redis

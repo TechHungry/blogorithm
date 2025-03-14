@@ -123,7 +123,7 @@ export default function AdminStatusPage() {
 
                 {status === 'authenticated' && (
                     <div className="space-y-6">
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                        <div className="bg-[#161515] p-6 rounded-lg shadow-lg border border-gray-700">
                             <h2 className="text-xl font-semibold mb-4">Session Information</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
@@ -158,7 +158,7 @@ export default function AdminStatusPage() {
                                 <p className="text-red-300 font-medium">{errorMsg}</p>
                             </div>
                         ) : debugInfo && (
-                            <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                            <div className="bg-[#161515] p-6 rounded-lg shadow-lg border border-gray-700">
                                 <h2 className="text-xl font-semibold mb-4">Redis Information</h2>
                                 <div className="space-y-4">
                                     <div>
@@ -195,7 +195,7 @@ export default function AdminStatusPage() {
                         )}
 
                         {adminList && (
-                            <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                            <div className="bg-[#161515] p-6 rounded-lg shadow-lg border border-gray-700">
                                 <h2 className="text-xl font-semibold mb-4">Admin List</h2>
                                 <p className="text-gray-400 mb-1">Primary Admin: {adminList.primaryAdminEmail}</p>
 

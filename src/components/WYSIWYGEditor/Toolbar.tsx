@@ -1,6 +1,7 @@
+// src/components/WYSIWYGEditor/Toolbar.tsx
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import EditorButton from './EditorButton';
 import LinkInput from './LinkInput';
 import ImageInput from './ImageInput';
@@ -18,6 +19,115 @@ const Toolbar = ({ editorRef }: ToolbarProps) => {
     const [linkModal, setLinkModal] = useState(false);
     const [imageModal, setImageModal] = useState(false);
     const [activeStyles, setActiveStyles] = useState<Record<string, boolean>>({});
+    const savedSelectionRef = useRef<{
+        range: Range | null,
+        start: number | null,
+        end: number | null
+    }>({
+        range: null,
+        start: null,
+        end: null
+    });
+
+    // More robust selection save
+    const saveSelection = useCallback(() => {
+        if (!editorRef.current) return;
+
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0).cloneRange();
+
+            // Also store numeric positions to handle React re-renders better
+            const preSelectionRange = range.cloneRange();
+            preSelectionRange.selectNodeContents(editorRef.current);
+            preSelectionRange.setEnd(range.startContainer, range.startOffset);
+            const start = preSelectionRange.toString().length;
+
+            // Calculate end position
+            preSelectionRange.setEnd(range.endContainer, range.endOffset);
+            const end = preSelectionRange.toString().length;
+
+            savedSelectionRef.current = {
+                range: range,
+                start: start,
+                end: end
+            };
+        }
+    }, [editorRef]);
+
+    // Helper function to find a node and offset based on position
+    const findNodeAndOffsetAtPosition = (rootNode: Node, position: number): { node: Node, offset: number } | null => {
+        const treeWalker = document.createTreeWalker(
+            rootNode,
+            NodeFilter.SHOW_TEXT,
+            { acceptNode: (node) => NodeFilter.FILTER_ACCEPT }
+        );
+
+        let currentPosition = 0;
+        let currentNode = treeWalker.nextNode();
+
+        while (currentNode) {
+            const nodeLength = currentNode.textContent?.length || 0;
+
+            if (currentPosition + nodeLength >= position) {
+                return {
+                    node: currentNode,
+                    offset: position - currentPosition
+                };
+            }
+
+            currentPosition += nodeLength;
+            currentNode = treeWalker.nextNode();
+        }
+
+        // If we couldn't find the position, return the last position
+        if (currentPosition > 0) {
+            const lastNode = rootNode.lastChild;
+            if (lastNode) {
+                return {
+                    node: lastNode,
+                    offset: (lastNode.textContent?.length || 0)
+                };
+            }
+        }
+
+        return null;
+    };
+
+    // More robust selection restore
+    const restoreSelection = useCallback(() => {
+        if (!editorRef.current) return;
+
+        const selection = window.getSelection();
+        if (!selection) return;
+
+        // First try to restore by range if available
+        if (savedSelectionRef.current.range) {
+            try {
+                selection.removeAllRanges();
+                selection.addRange(savedSelectionRef.current.range);
+                return;
+            } catch (e) {
+                // If range restoration fails, fall back to position-based approach
+                console.log("Range restoration failed, using position fallback");
+            }
+        }
+
+        // Fall back to position-based approach
+        if (savedSelectionRef.current.start !== null && savedSelectionRef.current.end !== null) {
+            const charIndex = findNodeAndOffsetAtPosition(editorRef.current, savedSelectionRef.current.start);
+            const endCharIndex = findNodeAndOffsetAtPosition(editorRef.current, savedSelectionRef.current.end);
+
+            if (charIndex && endCharIndex) {
+                const range = document.createRange();
+                range.setStart(charIndex.node, charIndex.offset);
+                range.setEnd(endCharIndex.node, endCharIndex.offset);
+
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
+    }, [editorRef]);
 
     // Enhanced exec command with selection preservation
     const exec = useCallback((cmd: string, arg: string | null = null) => {
@@ -27,26 +137,27 @@ const Toolbar = ({ editorRef }: ToolbarProps) => {
         editorRef.current.focus();
 
         // Save current selection
-        const selection = window.getSelection();
-        const range = selection?.getRangeAt(0);
+        saveSelection();
 
         // Execute the command
         document.execCommand(cmd, false, arg || '');
 
-        // Restore selection if needed
-        if (selection && range && !selection.rangeCount) {
-            selection.addRange(range);
-        }
-
-        // Update active styles
-        checkActiveStyles();
-    }, [editorRef]);
+        // Restore selection with a slight delay to ensure DOM updates complete
+        requestAnimationFrame(() => {
+            restoreSelection();
+            // Check styles after the command is executed
+            checkActiveStyles();
+        });
+    }, [editorRef, saveSelection, restoreSelection]);
 
     // Format block with enhanced handling
     const formatBlock = useCallback((block: string) => {
         if (!editorRef.current) return;
 
         editorRef.current.focus();
+
+        // Save selection
+        saveSelection();
 
         // Special handling for code blocks
         if (block === 'pre') {
@@ -63,8 +174,13 @@ const Toolbar = ({ editorRef }: ToolbarProps) => {
         }
 
         document.execCommand('formatBlock', false, block);
-        checkActiveStyles();
-    }, [editorRef]);
+
+        // Restore selection with a slight delay to ensure DOM updates complete
+        requestAnimationFrame(() => {
+            restoreSelection();
+            checkActiveStyles();
+        });
+    }, [editorRef, saveSelection, restoreSelection]);
 
     // Check which styles are currently active
     const checkActiveStyles = useCallback(() => {
@@ -84,10 +200,48 @@ const Toolbar = ({ editorRef }: ToolbarProps) => {
         setActiveStyles(styles);
     }, []);
 
-    // Add selection change event to update active styles
-    if (typeof document !== 'undefined' && editorRef.current) {
-        document.addEventListener('selectionchange', checkActiveStyles);
-    }
+    // Setup selection change event
+    useEffect(() => {
+        const onSelectionChange = () => {
+            if (editorRef.current && document.activeElement === editorRef.current) {
+                checkActiveStyles();
+                saveSelection();
+            }
+        };
+
+        document.addEventListener('selectionchange', onSelectionChange);
+        return () => {
+            document.removeEventListener('selectionchange', onSelectionChange);
+        };
+    }, [checkActiveStyles, saveSelection, editorRef]);
+
+    // Handle link button click
+    const handleLinkClick = () => {
+        saveSelection();
+        setLinkModal(true);
+    };
+
+    // Handle image button click
+    const handleImageClick = () => {
+        saveSelection();
+        setImageModal(true);
+    };
+
+    // Handle modal close
+    const handleModalClose = () => {
+        setLinkModal(false);
+        setImageModal(false);
+        // Use requestAnimationFrame for more reliable timing
+        requestAnimationFrame(() => {
+            restoreSelection();
+        });
+    };
+
+    // Execute command with selection restoration
+    const execWithSelectionRestore = (cmd: string, arg: string) => {
+        restoreSelection();
+        exec(cmd, arg);
+    };
 
     return (
         <>
@@ -169,12 +323,12 @@ const Toolbar = ({ editorRef }: ToolbarProps) => {
 
                 <EditorButton
                     icon={<Link size={18} />}
-                    onClick={() => setLinkModal(true)}
+                    onClick={handleLinkClick}
                     active={false}
                 />
                 <EditorButton
                     icon={<Image size={18} />}
-                    onClick={() => setImageModal(true)}
+                    onClick={handleImageClick}
                     active={false}
                 />
                 <EditorButton
@@ -184,8 +338,8 @@ const Toolbar = ({ editorRef }: ToolbarProps) => {
                 />
             </div>
 
-            {linkModal && <LinkInput exec={exec} onClose={() => setLinkModal(false)} />}
-            {imageModal && <ImageInput exec={exec} onClose={() => setImageModal(false)} />}
+            {linkModal && <LinkInput exec={execWithSelectionRestore} onClose={handleModalClose} />}
+            {imageModal && <ImageInput exec={execWithSelectionRestore} onClose={handleModalClose} />}
         </>
     );
 };

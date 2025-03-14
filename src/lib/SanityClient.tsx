@@ -1,14 +1,6 @@
 // sanity.js
-import {createClient} from '@sanity/client'
+import { client } from '@/clients/sanity/client'
 import {SanityPayload} from '@/interfaces/post'
-
-export const client = createClient({
-    projectId: '9ykzm040',
-    dataset: 'production',
-    useCdn: true, // set to `false` to bypass the edge cache
-    apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
-    token: process.env.SANITY_SECRET_TOKEN // Needed for certain operations like updating content, accessing drafts or using draft perspectives
-})
 
 // uses GROQ to query content: https://www.sanity.io/docs/groq
 export async function getPosts() {
@@ -26,7 +18,7 @@ export async function createPost(post: SanityPayload) {
     const result = await transaction.commit();
     console.log('Created draft post:', result);
     return result.results[0];
-    // const result = client.create(post)
+    // const result = clients.create(post)
     // return result
 }
 
